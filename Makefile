@@ -11,3 +11,6 @@ fmt:
 
 check:
 	cargo check --no-default-features
+
+clean:
+	cargo clean

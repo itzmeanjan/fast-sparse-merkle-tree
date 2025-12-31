@@ -4,7 +4,7 @@ use crate::{
     merge::{hash_leaf, merge},
     traits::{Hasher, Value},
     vec::Vec,
-    Key, H256, TREE_HEIGHT,
+    vec_macro, Key, H256, TREE_HEIGHT,
 };
 use core::convert::TryInto;
 
@@ -103,10 +103,7 @@ impl MerkleProof {
                     let parent_program = merge_program(&program, &sibling_program, height)?;
                     (parent_key, parent_program, height)
                 } else {
-                    let merge_height = leaves_path[leaf_index]
-                        .front()
-                        .map(|h| *h as usize)
-                        .unwrap_or(height);
+                    let merge_height = leaves_path[leaf_index].front().copied().unwrap_or(height);
                     if height != merge_height {
                         debug_assert!(height < merge_height);
                         let parent_key = key.copy_bits(merge_height..);
@@ -116,7 +113,6 @@ impl MerkleProof {
                     }
                     let (proof, proof_height) = proof.pop_front().expect("pop proof");
                     debug_assert_eq!(proof_height, leaves_path[leaf_index][0]);
-                    let proof_height = proof_height as usize;
                     debug_assert!(height <= proof_height);
                     if height < proof_height {
                         height = proof_height;
@@ -194,10 +190,7 @@ impl MerkleProof {
                         .expect("pop sibling");
                     (sibling, height)
                 } else {
-                    let merge_height = leaves_path[leaf_index]
-                        .front()
-                        .map(|h| *h as usize)
-                        .unwrap_or(height);
+                    let merge_height = leaves_path[leaf_index].front().copied().unwrap_or(height);
                     if height != merge_height {
                         debug_assert!(height < merge_height);
                         let parent_key = key.copy_bits(merge_height..);
@@ -207,7 +200,7 @@ impl MerkleProof {
                     }
                     let (node, height) = proof.pop_front().expect("pop proof");
                     debug_assert_eq!(height, leaves_path[leaf_index][0]);
-                    (node, height as usize)
+                    (node, height)
                 };
             debug_assert!(height <= sibling_height);
             if height < sibling_height {
@@ -245,7 +238,7 @@ impl MerkleProof {
 }
 
 fn leaf_program(leaf_index: usize) -> (Vec<u8>, Option<Range>) {
-    let program = vec![0x4C];
+    let program = vec_macro![0x4C];
     (
         program,
         Some(Range {

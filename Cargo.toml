@@ -7,16 +7,17 @@ name = "nam-sparse-merkle-tree"
 repository = "https://github.com/anoma/sparse-merkle-tree"
 version = "0.3.3-nam.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [features]
 blake2b = ["blake2b-rs"]
 default = ["std", "blake2b", "borsh"]
 std = []
 
 [dependencies]
-blake2b-rs = {version = "0.2.0", optional = true}
-borsh = {version = "1.2.0", optional = true, features = ["unstable__schema", "derive"]}
+blake2b-rs = { version = "0.2.0", optional = true }
+borsh = { version = "1.2.0", optional = true, features = [
+    "unstable__schema",
+    "derive",
+] }
 cfg-if = "1.0.0"
 ics23 = "0.12.0"
 itertools = "0.14.0"

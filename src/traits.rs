@@ -1,6 +1,7 @@
 use crate::{
     error::Error,
     tree::{BranchNode, LeafNode},
+    vec::Vec,
     Hash as KeyHash, InternalKey, H256,
 };
 use core::hash::Hash;
@@ -44,7 +45,7 @@ impl Key<32> for KeyHash {
     }
 
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, Self::Error> {
-        use std::convert::TryInto;
+        use core::convert::TryInto;
         let bytes: [u8; 32] = bytes
             .try_into()
             .map_err(|_| crate::error::Error::KeyTooLarge)?;

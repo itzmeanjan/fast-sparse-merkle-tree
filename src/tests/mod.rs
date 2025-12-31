@@ -316,7 +316,6 @@ fn new_sha_smt<const N: usize>(pairs: Vec<(PaddedKey<N>, H256)>) -> ShaSmt<N> {
 fn test_ics23_non_membership_proof() {
     use rand::Rng;
     let pairs: Vec<(PaddedKey<115>, H256)> = (0u8..20)
-        .into_iter()
         .map(|i| {
             (
                 PaddedKey::<115>::try_from(vec![i; 29]).expect("Test failed"),
@@ -348,7 +347,6 @@ fn test_ics23_non_membership_proof() {
 fn test_ics23_membership_proof() {
     use rand::Rng;
     let pairs: Vec<(PaddedKey<115>, H256)> = (0u8..20)
-        .into_iter()
         .map(|i| {
             (
                 PaddedKey::<115>::try_from(vec![i; 29]).expect("Test failed"),
@@ -427,14 +425,14 @@ proptest! {
         let one: H256 = [255u8; 32].into();
         let target = one.copy_bits(start..(start.saturating_add(size)));
         for i in start..start.saturating_add(size) {
-            assert_eq!(one.get_bit(i as u8), target.get_bit(i as u8));
+            assert_eq!(one.get_bit(i), target.get_bit(i));
         }
         for i in 0..start {
-            assert!(!target.get_bit(i as u8));
+            assert!(!target.get_bit(i));
         }
         if let Some(start_i) = start.checked_add(size).and_then(|i| i.checked_add(1)){
             for i in start_i..=255 {
-                assert!(!target.get_bit(i as u8));
+                assert!(!target.get_bit(i));
             }
         }
     }
@@ -679,7 +677,7 @@ fn test_v0_2_broken_sample() {
     ]
     .into_iter()
     .map(parse_h256);
-    let mut pairs = keys.into_iter().zip(values.into_iter()).collect::<Vec<_>>();
+    let mut pairs = keys.into_iter().zip(values).collect::<Vec<_>>();
     let smt = new_smt::<32>(pairs.clone());
     let base_root = *smt.root();
 

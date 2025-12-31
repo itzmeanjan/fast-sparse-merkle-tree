@@ -32,14 +32,14 @@ impl H256 {
     pub fn set_bit(&mut self, i: u8) {
         let byte_pos = MAX_INDEX - i / BYTE_SIZE;
         let bit_pos = i % BYTE_SIZE;
-        self.0[byte_pos as usize] |= 1 << bit_pos as u8;
+        self.0[byte_pos as usize] |= 1u8 << bit_pos;
     }
 
     #[inline]
     pub fn clear_bit(&mut self, i: u8) {
         let byte_pos = MAX_INDEX - i / BYTE_SIZE;
         let bit_pos = i % BYTE_SIZE;
-        self.0[byte_pos as usize] &= !((1 << bit_pos) as u8);
+        self.0[byte_pos as usize] &= !(1u8 << bit_pos);
     }
 
     pub fn as_slice(&self) -> &[u8] {
@@ -50,7 +50,7 @@ impl H256 {
     /// fork height is the number of common bits(from heigher to lower: 255..=0)
     /// of two H256
     pub fn fork_height(&self, key: &H256) -> u8 {
-        for h in (0..=core::u8::MAX).rev() {
+        for h in (0..=u8::MAX).rev() {
             if self.get_bit(h) != key.get_bit(h) {
                 return h;
             }

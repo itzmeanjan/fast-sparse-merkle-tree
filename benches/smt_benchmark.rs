@@ -137,7 +137,7 @@ fn bench_strings(c: &mut Criterion) {
             let mut rng = thread_rng();
             let (smt, _keys) = random_stringsmt(size, &mut rng);
             b.iter(|| {
-                let key = random_stringkey(&mut rng).into();
+                let key = random_stringkey(&mut rng);
                 smt.get(&key).unwrap();
             });
         });

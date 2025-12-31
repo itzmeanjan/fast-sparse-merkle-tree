@@ -2,10 +2,9 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 #[cfg(feature = "borsh")]
 use core::convert::TryInto;
-use std::fmt::Debug;
-use std::io::Read;
+use core::fmt::Debug;
 #[cfg(feature = "borsh")]
-use std::io::Write;
+use std::io::{Read, Write};
 
 /// The actual key value used in the tree
 #[derive(Eq, PartialEq, Debug, Hash, Clone, Copy, PartialOrd, Ord)]
@@ -52,9 +51,6 @@ impl<const N: usize> InternalKey<N> {
 
     #[inline]
     pub fn get_bit(&self, i: usize) -> bool {
-        if i / BYTE_SIZE > Self::max_index() {
-            println!("Hey");
-        }
         let byte_pos = Self::max_index() - i / BYTE_SIZE;
         let bit_pos = i % BYTE_SIZE;
         let bit = self.0[byte_pos] >> bit_pos & 1;
@@ -65,21 +61,21 @@ impl<const N: usize> InternalKey<N> {
     pub fn set_bit(&mut self, i: usize) {
         let byte_pos = Self::max_index() - i / BYTE_SIZE;
         let bit_pos = i % BYTE_SIZE;
-        self.0[byte_pos as usize] |= 1 << bit_pos as u8;
+        self.0[byte_pos] |= 1u8 << bit_pos;
     }
 
     #[inline]
     pub fn clear_bit(&mut self, i: usize) {
         let byte_pos = Self::max_index() - i / BYTE_SIZE;
         let bit_pos = i % BYTE_SIZE;
-        self.0[byte_pos as usize] &= !((1 << bit_pos) as u8);
+        self.0[byte_pos] &= !(1u8 << bit_pos);
     }
 
     /// Treat InternalKey as a path in a tree
     /// fork height is the number of common bits(from higher to lower)
     /// of two InternalKeys
     pub fn fork_height(&self, key: &InternalKey<N>) -> usize {
-        let max = (BYTE_SIZE * N) as usize;
+        let max = BYTE_SIZE * N;
         for h in (0..max).rev() {
             if self.get_bit(h) != key.get_bit(h) {
                 return h;
@@ -105,14 +101,14 @@ impl<const N: usize> InternalKey<N> {
 
         let mut target = InternalKey::zero();
         let start = match range.start_bound() {
-            Bound::Included(&i) => i as usize,
+            Bound::Included(&i) => i,
             Bound::Excluded(&i) => panic!("do not allows excluded start: {}", i),
             Bound::Unbounded => 0,
         };
 
         let mut end = match range.end_bound() {
-            Bound::Included(&i) => i.saturating_add(1) as usize,
-            Bound::Excluded(&i) => i as usize,
+            Bound::Included(&i) => i.saturating_add(1),
+            Bound::Excluded(&i) => i,
             Bound::Unbounded => max,
         };
 

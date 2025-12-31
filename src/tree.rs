@@ -6,7 +6,7 @@ use crate::{
     proof_ics23,
     traits::{Hasher, Store, Value},
     vec::Vec,
-    InternalKey, Key, EXPECTED_PATH_SIZE, H256,
+    vec_macro, InternalKey, Key, EXPECTED_PATH_SIZE, H256,
 };
 #[cfg(feature = "borsh")]
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -313,7 +313,7 @@ where
                         // mark sibling's index, sibling on the right path.
                         sibling_key.set_bit(height);
                     };
-                    cache.insert((height as usize, sibling_key), sibling);
+                    cache.insert((height, sibling_key), sibling);
                     if let Some(branch_node) = self.store.get_branch(&node)? {
                         let fork_height =
                             max(key.fork_height(&branch_node.key), branch_node.fork_height);
@@ -419,7 +419,7 @@ where
         if value == V::zero() {
             return Err(Error::ExistenceProof);
         }
-        let merkle_proof = self.merkle_proof(vec![*key])?;
+        let merkle_proof = self.merkle_proof(vec_macro![*key])?;
         let existence_proof = proof_ics23::convert(merkle_proof, key, &value, H::hash_op())?;
         Ok(CommitmentProof {
             proof: Some(Proof::Exist(existence_proof)),
@@ -460,7 +460,7 @@ where
                     };
                 }
                 let leaf = self.store.get_leaf(&n)?.expect("the leaf should exist");
-                let merkle_proof = self.merkle_proof(vec![leaf.key])?;
+                let merkle_proof = self.merkle_proof(vec_macro![leaf.key])?;
                 left = Some(proof_ics23::convert(
                     merkle_proof,
                     &leaf.key,
@@ -482,7 +482,7 @@ where
                     };
                 }
                 let leaf = self.store.get_leaf(&n)?.expect("the leaf should exist");
-                let merkle_proof = self.merkle_proof(vec![leaf.key])?;
+                let merkle_proof = self.merkle_proof(vec_macro![leaf.key])?;
                 right = Some(proof_ics23::convert(
                     merkle_proof,
                     &leaf.key,

@@ -7,8 +7,8 @@ use crate::{
 };
 #[cfg(feature = "borsh")]
 use borsh::{BorshDeserialize, BorshSerialize};
+use core::ops::Deref;
 use itertools::Itertools;
-use std::ops::Deref;
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize))]
@@ -53,10 +53,10 @@ where
     K: Key<N>,
 {
     fn get_branch(&self, node: &H256) -> Result<Option<BranchNode<K, N>>, Error> {
-        Ok(self.branches_map.get(node).map(Clone::clone))
+        Ok(self.branches_map.get(node).cloned())
     }
     fn get_leaf(&self, leaf_hash: &H256) -> Result<Option<LeafNode<K, V, N>>, Error> {
-        Ok(self.leaves_map.get(leaf_hash).map(Clone::clone))
+        Ok(self.leaves_map.get(leaf_hash).cloned())
     }
     fn insert_branch(&mut self, node: H256, branch: BranchNode<K, N>) -> Result<(), Error> {
         self.branches_map.insert(node, branch);

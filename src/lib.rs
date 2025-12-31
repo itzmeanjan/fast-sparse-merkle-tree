@@ -85,7 +85,7 @@ pub use traits::Key;
 pub use tree::SparseMerkleTree;
 
 /// Expected path size: log2(256) * 2, used for hint vector capacity
-pub const EXPECTED_PATH_SIZE: usize = 16;
+pub const EXPECTED_PATH_SIZE: usize = (256usize.ilog2() * 2) as usize;
 /// Height of sparse merkle tree
 pub const TREE_HEIGHT: usize = 256;
 /// Key limit size
@@ -96,10 +96,12 @@ cfg_if::cfg_if! {
         use std::collections;
         use std::vec;
         use std::string;
+        use std::vec as vec_macro;
     } else {
         extern crate alloc;
         use alloc::collections;
         use alloc::vec;
         use alloc::string;
+        use alloc::vec as vec_macro;
     }
 }

@@ -2,7 +2,7 @@ use ics23::{ExistenceProof, HashOp, InnerOp, InnerSpec, LeafOp, LengthOp, ProofS
 
 use crate::collections::VecDeque;
 use crate::error::{Error, Result};
-use crate::{traits::Value, Key, MerkleProof, H256, TREE_HEIGHT};
+use crate::{traits::Value, vec::Vec, vec_macro, Key, MerkleProof, H256, TREE_HEIGHT};
 
 pub fn convert<K, V, const N: usize>(
     merkle_proof: MerkleProof,
@@ -16,7 +16,7 @@ where
 {
     let (leaves_path, proof) = merkle_proof.take();
     let mut merge_heights: VecDeque<_> = leaves_path
-        .get(0)
+        .first()
         .expect("The heights should exist")
         .clone()
         .into();
@@ -33,7 +33,7 @@ where
         }
 
         // check the height is valid
-        let merge_height = merge_heights.front().map(|h| *h as usize).unwrap_or(height);
+        let merge_height = merge_heights.front().copied().unwrap_or(height);
         if height != merge_height {
             // skip the heights
             height = merge_height;
@@ -42,9 +42,9 @@ where
 
         // get a proof
         let (sibling, sibling_height) = proof.pop_front().expect("no proof");
-        if height < sibling_height as usize {
+        if height < sibling_height {
             // skip heights
-            height = sibling_height as usize;
+            height = sibling_height;
         }
         let inner_op = get_inner_op(hash_op, &sibling, cur_key.get_bit(height));
         path.push(inner_op);
@@ -85,9 +85,9 @@ fn get_leaf_op(hash_op: HashOp) -> LeafOp {
 fn get_inner_op(hash_op: HashOp, sibling: &H256, is_right_node: bool) -> InnerOp {
     let node = sibling.as_slice().to_vec();
     let (prefix, suffix) = if is_right_node {
-        (node, vec![])
+        (node, vec_macro![])
     } else {
-        (vec![], node)
+        (vec_macro![], node)
     };
     InnerOp {
         hash: hash_op.into(),
@@ -98,11 +98,11 @@ fn get_inner_op(hash_op: HashOp, sibling: &H256, is_right_node: bool) -> InnerOp
 
 fn get_inner_spec(hash_op: HashOp) -> InnerSpec {
     InnerSpec {
-        child_order: vec![0, 1],
+        child_order: vec_macro![0, 1],
         child_size: 32,
         min_prefix_length: 0,
         max_prefix_length: 32,
-        empty_child: vec![],
+        empty_child: vec_macro![],
         hash: hash_op.into(),
     }
 }

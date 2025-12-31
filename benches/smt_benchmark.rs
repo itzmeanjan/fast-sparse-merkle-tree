@@ -5,7 +5,7 @@ mod string_key;
 
 use criterion::{BenchmarkId, Criterion, Throughput};
 use nam_sparse_merkle_tree::{
-    H256, Hash, default_store::DefaultStore, sha256::Sha256Hasher, tree::SparseMerkleTree,
+    H256, Hash, default_store::DefaultStore, internal_sha256::Sha256Hasher, tree::SparseMerkleTree,
 };
 use rand::Rng;
 use string_key::{IBC_KEY_LIMIT, StringKey, random_stringkey};

@@ -3,7 +3,7 @@ mod padded_key;
 use super::*;
 use crate::{
     MerkleProof, SparseMerkleTree, default_store::DefaultStore, error::Error,
-    internal_blake2b::Blake2bHasher, sha256::Sha256Hasher, traits::Hasher,
+    internal_blake2b::Blake2bHasher, internal_sha256::Sha256Hasher, traits::Hasher,
 };
 use core::convert::{TryFrom, TryInto};
 use padded_key::PaddedKey;

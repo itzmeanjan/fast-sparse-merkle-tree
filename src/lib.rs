@@ -61,10 +61,10 @@ pub mod h256;
 #[cfg(feature = "blake2b")]
 pub mod internal_blake2b;
 pub mod internal_key;
+pub mod internal_sha256;
 pub mod merge;
 pub mod merkle_proof;
 pub mod proof_ics23;
-pub mod sha256;
 #[cfg(test)]
 mod tests;
 pub mod traits;

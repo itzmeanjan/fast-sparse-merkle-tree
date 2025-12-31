@@ -321,7 +321,7 @@ fn test_ics23_non_membership_proof() {
         .map(|i| {
             (
                 PaddedKey::<115>::try_from(vec![i; 29]).expect("Test failed"),
-                H256::from(rand::thread_rng().r#gen::<[u8; 32]>()),
+                H256::from(rand::rng().random::<[u8; 32]>()),
             )
         })
         .collect();
@@ -352,7 +352,7 @@ fn test_ics23_membership_proof() {
         .map(|i| {
             (
                 PaddedKey::<115>::try_from(vec![i; 29]).expect("Test failed"),
-                H256::from(rand::thread_rng().r#gen::<[u8; 32]>()),
+                H256::from(rand::rng().random::<[u8; 32]>()),
             )
         })
         .collect();
@@ -573,7 +573,7 @@ proptest! {
         .collect();
         let smt = new_smt::<40>(pairs.clone());
         let root = *smt.root();
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         for _i in 0..10 {
             pairs.shuffle(&mut rng);
             let smt = new_smt::<40>(pairs.clone());
@@ -584,8 +584,8 @@ proptest! {
 
     #[test]
     fn test_smt_update_with_zero_values((pairs, _n) in leaves(5, 30)){
-        let mut rng = rand::thread_rng();
-        let len =  rng.gen_range(0..pairs.len());
+        let mut rng = rand::rng();
+        let len =  rng.random_range(0..pairs.len());
         let mut smt = new_smt::<29>(pairs[..len].to_vec());
         let root = *smt.root();
 
@@ -684,7 +684,7 @@ fn test_v0_2_broken_sample() {
     let base_root = *smt.root();
 
     // insert in random order
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     for _i in 0..10 {
         pairs.shuffle(&mut rng);
         let smt = new_smt(pairs.clone());

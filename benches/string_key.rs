@@ -68,12 +68,12 @@ fn random_identifier(id: Identifier, rng: &mut impl Rng) -> String {
         Identifier::Connection => 10..=64,
         Identifier::Channel => 8..=64,
     };
-    generate(rng.gen_range(range), ICS_IDENTIFIER_CHARSET)
+    generate(rng.random_range(range), ICS_IDENTIFIER_CHARSET)
 }
 
 /// Generate a random path in storage specified by ICS
 fn random_ics_path(rng: &mut impl Rng) -> String {
-    match rng.gen_range(0..13u8) {
+    match rng.random_range(0..13u8) {
         0 => format!(
             "clients/{}/clientType",
             random_identifier(Identifier::Client, rng)
@@ -85,7 +85,7 @@ fn random_ics_path(rng: &mut impl Rng) -> String {
         2 => format!(
             "clients/{}/consensusStates/{}",
             random_identifier(Identifier::Client, rng),
-            rng.gen_range(1..=128u8)
+            rng.random_range(1..=128u8)
         ),
         3 => format!(
             "clients/{}/connections",
@@ -120,19 +120,19 @@ fn random_ics_path(rng: &mut impl Rng) -> String {
             "commitments/ports/{}/channels/{}/sequences/{}",
             random_identifier(Identifier::Port, rng),
             random_identifier(Identifier::Channel, rng),
-            rng.gen_range(0..=128u8),
+            rng.random_range(0..=128u8),
         ),
         11 => format!(
             "receipts/ports/{}/channels/{}/sequences/{}",
             random_identifier(Identifier::Port, rng),
             random_identifier(Identifier::Channel, rng),
-            rng.gen_range(0..=128u8),
+            rng.random_range(0..=128u8),
         ),
         12 => format!(
             "acks/ports/{}/channels/{}/sequences/{}",
             random_identifier(Identifier::Port, rng),
             random_identifier(Identifier::Channel, rng),
-            rng.gen_range(0..=128u8),
+            rng.random_range(0..=128u8),
         ),
         _ => unreachable!(),
     }

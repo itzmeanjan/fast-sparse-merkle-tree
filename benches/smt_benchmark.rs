@@ -7,7 +7,7 @@ use criterion::{BenchmarkId, Criterion, Throughput};
 use nam_sparse_merkle_tree::{
     H256, Hash, default_store::DefaultStore, sha256::Sha256Hasher, tree::SparseMerkleTree,
 };
-use rand::{Rng, thread_rng};
+use rand::Rng;
 use string_key::{IBC_KEY_LIMIT, StringKey, random_stringkey};
 
 const TARGET_LEAVES_COUNT: usize = 20;
@@ -56,7 +56,7 @@ fn bench_hashes(c: &mut Criterion) {
     for size in [100, 10_000].iter() {
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
             b.iter(|| {
-                let mut rng = thread_rng();
+                let mut rng = rand::rng();
                 random_shasmt(size, &mut rng)
             });
         });
@@ -66,7 +66,7 @@ fn bench_hashes(c: &mut Criterion) {
     let mut group = c.benchmark_group("ShaSmt get");
     for size in [5_000, 10_000].iter() {
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
-            let mut rng = thread_rng();
+            let mut rng = rand::rng();
             let (smt, _keys) = random_shasmt(size, &mut rng);
             b.iter(|| {
                 let key = random_h256(&mut rng).into();
@@ -77,7 +77,7 @@ fn bench_hashes(c: &mut Criterion) {
     group.finish();
 
     c.bench_function("ShaSmt generate merkle proof", |b| {
-        let mut rng = thread_rng();
+        let mut rng = rand::rng();
         let (smt, mut keys) = random_shasmt(10_000, &mut rng);
         keys.dedup();
         let keys: Vec<_> = keys.into_iter().take(TARGET_LEAVES_COUNT).collect();
@@ -87,7 +87,7 @@ fn bench_hashes(c: &mut Criterion) {
     });
 
     c.bench_function("ShaSmt verify merkle proof", |b| {
-        let mut rng = thread_rng();
+        let mut rng = rand::rng();
         let (smt, mut keys) = random_shasmt(10_000, &mut rng);
         keys.dedup();
         let leaves: Vec<_> = keys
@@ -111,7 +111,7 @@ fn bench_hashes(c: &mut Criterion) {
     for size in [10_000, 100_000].iter() {
         group.throughput(Throughput::Elements(*size as u64));
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
-            let mut rng = thread_rng();
+            let mut rng = rand::rng();
             let (smt, _) = random_shasmt(size, &mut rng);
             b.iter(|| assert!(smt.validate()));
         });
@@ -124,7 +124,7 @@ fn bench_strings(c: &mut Criterion) {
     for size in [100, 10_000].iter() {
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
             b.iter(|| {
-                let mut rng = thread_rng();
+                let mut rng = rand::rng();
                 random_stringsmt(size, &mut rng)
             });
         });
@@ -134,7 +134,7 @@ fn bench_strings(c: &mut Criterion) {
     let mut group = c.benchmark_group("StringSmt get");
     for size in [5_000, 10_000].iter() {
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
-            let mut rng = thread_rng();
+            let mut rng = rand::rng();
             let (smt, _keys) = random_stringsmt(size, &mut rng);
             b.iter(|| {
                 let key = random_stringkey(&mut rng);
@@ -145,7 +145,7 @@ fn bench_strings(c: &mut Criterion) {
     group.finish();
 
     c.bench_function("StringSmt generate merkle proof", |b| {
-        let mut rng = thread_rng();
+        let mut rng = rand::rng();
         let (smt, mut keys) = random_stringsmt(10_000, &mut rng);
         keys.dedup();
         let keys: Vec<_> = keys.into_iter().take(TARGET_LEAVES_COUNT).collect();
@@ -155,7 +155,7 @@ fn bench_strings(c: &mut Criterion) {
     });
 
     c.bench_function("StringSmt verify merkle proof", |b| {
-        let mut rng = thread_rng();
+        let mut rng = rand::rng();
         let (smt, mut keys) = random_stringsmt(10_000, &mut rng);
         keys.dedup();
         let leaves: Vec<_> = keys
@@ -179,7 +179,7 @@ fn bench_strings(c: &mut Criterion) {
     for size in [10_000, 100_000].iter() {
         group.throughput(Throughput::Elements(*size as u64));
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
-            let mut rng = thread_rng();
+            let mut rng = rand::rng();
             let (smt, _) = random_stringsmt(size, &mut rng);
             b.iter(|| assert!(smt.validate()));
         });

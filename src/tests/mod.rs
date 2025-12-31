@@ -2,8 +2,8 @@ mod padded_key;
 
 use super::*;
 use crate::{
-    MerkleProof, SparseMerkleTree, default_store::DefaultStore, error::Error,
-    internal_blake2b::Blake2bHasher, internal_sha256::Sha256Hasher, traits::Hasher,
+    MerkleProof, SparseMerkleTree, blake2b_hasher::Blake2bHasher, default_store::DefaultStore,
+    error::Error, traits::Hasher,
 };
 use core::convert::{TryFrom, TryInto};
 use padded_key::PaddedKey;
@@ -13,8 +13,6 @@ use sha2::digest::{Update, VariableOutput};
 
 type Smt<const N: usize> =
     SparseMerkleTree<Blake2bHasher, PaddedKey<N>, H256, DefaultStore<PaddedKey<N>, H256, N>, N>;
-type ShaSmt<const N: usize> =
-    SparseMerkleTree<Sha256Hasher, PaddedKey<N>, H256, DefaultStore<PaddedKey<N>, H256, N>, N>;
 
 #[test]
 fn test_default_root() {
@@ -99,7 +97,7 @@ fn test_validate() {
     for key_byte in [[0u8], [1], [4], [7], [8]] {
         let key: PaddedKey<1> = key_byte.into();
         let value: H256 = {
-            let mut hasher = internal_blake2b::Blake2bHasher::default();
+            let mut hasher = blake2b_hasher::Blake2bHasher::default();
             hasher.write_bytes(&key_byte);
             hasher.finish()
         };
@@ -130,7 +128,7 @@ fn test_merkle_root() {
             buf.into()
         };
         let value: H256 = {
-            let mut hasher = internal_blake2b::Blake2bHasher::default();
+            let mut hasher = blake2b_hasher::Blake2bHasher::default();
             hasher.write_bytes(word.as_bytes());
             hasher.finish()
         };
@@ -304,77 +302,6 @@ fn new_smt<const N: usize>(pairs: Vec<(PaddedKey<N>, H256)>) -> Smt<N> {
         smt.update(key, value).unwrap();
     }
     smt
-}
-
-fn new_sha_smt<const N: usize>(pairs: Vec<(PaddedKey<N>, H256)>) -> ShaSmt<N> {
-    let mut smt = ShaSmt::<N>::default();
-    for (key, value) in pairs {
-        smt.update(key, value).unwrap();
-    }
-    smt
-}
-
-#[test]
-fn test_ics23_non_membership_proof() {
-    use rand::Rng;
-    let pairs: Vec<(PaddedKey<115>, H256)> = (0u8..20)
-        .map(|i| {
-            (
-                PaddedKey::<115>::try_from(vec![i; 29]).expect("Test failed"),
-                H256::from(rand::rng().random::<[u8; 32]>()),
-            )
-        })
-        .collect();
-    let smt = new_sha_smt::<115>(pairs);
-    let spec = proof_ics23::get_spec(ics23::HashOp::Sha256);
-    let root = smt.root().as_slice().to_vec();
-    let non_existent_key =
-        PaddedKey::<115>::try_from("Non existent key".as_bytes().to_vec()).expect("Test failed");
-    assert_eq!(
-        String::from_utf8(non_existent_key.to_vec()).expect("Test failed"),
-        String::from("Non existent key")
-    );
-    let proof = smt
-        .non_membership_proof(&non_existent_key)
-        .expect("gen proof");
-    assert!(ics23::verify_non_membership::<ics23::HostFunctionsManager>(
-        &proof,
-        &spec,
-        &root,
-        &non_existent_key.to_vec()
-    ));
-}
-
-#[test]
-fn test_ics23_membership_proof() {
-    use rand::Rng;
-    let pairs: Vec<(PaddedKey<115>, H256)> = (0u8..20)
-        .map(|i| {
-            (
-                PaddedKey::<115>::try_from(vec![i; 29]).expect("Test failed"),
-                H256::from(rand::rng().random::<[u8; 32]>()),
-            )
-        })
-        .collect();
-    let mut smt = new_sha_smt::<115>(pairs);
-    let spec = proof_ics23::get_spec(ics23::HashOp::Sha256);
-    let existent_key =
-        PaddedKey::<115>::try_from("Existent key".as_bytes().to_vec()).expect("Test failed");
-    smt.update(existent_key, H256::from([42u8; 32]))
-        .expect("Test failed");
-    let root = smt.root().as_slice().to_vec();
-    assert_eq!(
-        String::from_utf8(existent_key.to_vec()).expect("Test failed"),
-        String::from("Existent key")
-    );
-    let proof = smt.membership_proof(&existent_key).expect("gen proof");
-    assert!(ics23::verify_membership::<ics23::HostFunctionsManager>(
-        &proof,
-        &spec,
-        &root,
-        &existent_key.to_vec(),
-        [42u8; 32].as_slice()
-    ));
 }
 
 fn leaves(
@@ -600,42 +527,6 @@ proptest! {
         for (k, v) in pairs[..len].iter() {
             let value = smt.get(k).unwrap();
             assert_eq!(v, &value);
-        }
-    }
-
-    #[test]
-    fn test_ics23_proof_single_leaf_small((pairs, _n) in leaves(1, 50)){
-        let pairs: Vec<(PaddedKey<120>, H256)> = pairs
-        .into_iter()
-        .map(|(key, v)| (PaddedKey::<120>::try_from(<[u8; 29]>::from(key).to_vec()).expect("Test failed"), v))
-        .collect();
-        let smt = new_sha_smt::<120>(pairs.clone());
-        let spec = proof_ics23::get_spec(ics23::HashOp::Sha256);
-        let root = smt.root().as_slice().to_vec();
-        for (k, v) in pairs {
-            let proof = smt.membership_proof(&k).expect("gen proof");
-            assert!(ics23::verify_membership::<ics23::HostFunctionsManager>(&proof, &spec, &root, &k.to_vec(), v.as_slice()));
-        }
-    }
-
-    #[test]
-    fn test_ics23_proof_non_exists_leaves((pairs, _n) in leaves(1, 20), (pairs2, _n2) in leaves(1, 5)) {
-       let pairs: Vec<(PaddedKey<115>, H256)> = pairs
-        .into_iter()
-        .filter_map(|(key, v)| PaddedKey::<115>::try_from(<[u8; 29]>::from(key).to_vec()).ok().map(|k| (k, v)))
-        .collect();
-        let pairs2: Vec<(PaddedKey<115>, H256)> = pairs2
-        .into_iter()
-        .filter_map(|(key, v)| PaddedKey::<115>::try_from(<[u8; 29]>::from(key).to_vec()).ok().map(|k| (k, v)))
-        .collect();
-        let smt = new_sha_smt::<115>(pairs.clone());
-        let spec = proof_ics23::get_spec(ics23::HashOp::Sha256);
-        let root = smt.root().as_slice().to_vec();
-        let exists_key: Vec<_> = pairs.into_iter().map(|(k, _v)|k).collect();
-        let non_exists_keys: Vec<_> = pairs2.into_iter().map(|(k, _v)|k).filter(|k| !exists_key.contains(k)).collect();
-        for k in non_exists_keys {
-            let proof = smt.non_membership_proof(&k).expect("gen proof");
-            assert!(ics23::verify_non_membership::<ics23::HostFunctionsManager>(&proof, &spec, &root, &k.to_vec()));
         }
     }
 }

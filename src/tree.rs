@@ -4,16 +4,12 @@ use crate::{
     error::{Error, Result},
     merge::{hash_leaf, merge},
     merkle_proof::MerkleProof,
-    proof_ics23,
     traits::{Hasher, Store, Value},
     vec::Vec,
-    vec_macro,
 };
 #[cfg(feature = "borsh")]
 use borsh::{BorshDeserialize, BorshSerialize};
 use core::{cmp::max, marker::PhantomData};
-use ics23::commitment_proof::Proof;
-use ics23::{CommitmentProof, NonExistenceProof};
 use itertools::Itertools;
 
 /// A branch in the SMT
@@ -412,97 +408,6 @@ where
         }
         debug_assert_eq!(leaves_path.len(), keys_len);
         Ok(MerkleProof::new(leaves_path, proof))
-    }
-
-    /// Generate ICS 23 commitment proof for the existing key
-    pub fn membership_proof(&self, key: &K) -> Result<CommitmentProof> {
-        let value = self.get(key)?;
-        if value == V::zero() {
-            return Err(Error::ExistenceProof);
-        }
-        let merkle_proof = self.merkle_proof(vec_macro![*key])?;
-        let existence_proof = proof_ics23::convert(merkle_proof, key, &value, H::hash_op())?;
-        Ok(CommitmentProof {
-            proof: Some(Proof::Exist(existence_proof)),
-        })
-    }
-
-    /// Generate ICS 23 commitment proof for the non-existing key
-    pub fn non_membership_proof(&self, key: &K) -> Result<CommitmentProof> {
-        let value = self.get(key)?;
-        if value != V::zero() {
-            return Err(Error::NonExistenceProof);
-        }
-
-        // fetch all merkle path
-        let mut cache: BTreeMap<(usize, _), H256> = Default::default();
-        self.fetch_merkle_path(key, &mut cache)?;
-        let mut left = None;
-        let mut right = None;
-        for (_, node) in cache.iter() {
-            let branch = self
-                .store
-                .get_branch(node)?
-                .expect("the forked branch should exist");
-            let fork_height = key.fork_height(&branch.key);
-            let is_right = key.get_bit(fork_height);
-            if is_right && left.is_none() {
-                // get the left which is the most right in the left subtree
-                let mut n = *node;
-                while let Some(branch) = self.store.get_branch(&n)? {
-                    if branch.fork_height == 0 {
-                        break;
-                    }
-                    let (left_node, right_node) = branch.branch(branch.fork_height);
-                    n = if right_node.is_zero() {
-                        *left_node
-                    } else {
-                        *right_node
-                    };
-                }
-                let leaf = self.store.get_leaf(&n)?.expect("the leaf should exist");
-                let merkle_proof = self.merkle_proof(vec_macro![leaf.key])?;
-                left = Some(proof_ics23::convert(
-                    merkle_proof,
-                    &leaf.key,
-                    &leaf.value,
-                    H::hash_op(),
-                )?);
-            } else if !is_right && right.is_none() {
-                // get the right which is the most left in the right subtree
-                let mut n = *node;
-                while let Some(branch) = self.store.get_branch(&n)? {
-                    if branch.fork_height == 0 {
-                        break;
-                    }
-                    let (left_node, right_node) = branch.branch(branch.fork_height);
-                    n = if left_node.is_zero() {
-                        *right_node
-                    } else {
-                        *left_node
-                    };
-                }
-                let leaf = self.store.get_leaf(&n)?.expect("the leaf should exist");
-                let merkle_proof = self.merkle_proof(vec_macro![leaf.key])?;
-                right = Some(proof_ics23::convert(
-                    merkle_proof,
-                    &leaf.key,
-                    &leaf.value,
-                    H::hash_op(),
-                )?);
-            }
-            if left.is_some() && right.is_some() {
-                break;
-            }
-        }
-        let proof = NonExistenceProof {
-            key: key.to_vec(),
-            left,
-            right,
-        };
-        Ok(CommitmentProof {
-            proof: Some(Proof::Nonexist(proof)),
-        })
     }
 
     /// Recompute the root of the merkle tree from the store. Check if it agrees with the

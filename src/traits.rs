@@ -11,9 +11,6 @@ use core::ops::Deref;
 pub trait Hasher {
     fn write_bytes(&mut self, h: &[u8]);
     fn finish(self) -> H256;
-    fn hash_op() -> ics23::HashOp {
-        ics23::HashOp::NoHash
-    }
 }
 
 /// This trait is map keys to / from the users key space into a finite

@@ -2,7 +2,7 @@ use crate::{H256, traits::Hasher};
 use blake2::Blake2bVar;
 use blake2::digest::{Update, VariableOutput};
 
-const BLAKE2B_DIGEST_BYTE_LEN: usize = 32;
+const BLAKE2B_DIGEST_BYTE_LEN: usize = core::mem::size_of::<H256>();
 const BLAKE2B_PERSONALIZATION_STRING: &[u8] = b"sparsemerkletree";
 
 pub struct Blake2bHasher(Blake2bVar);
@@ -13,7 +13,7 @@ impl Default for Blake2bHasher {
             let mut hasher = Blake2bVar::new(BLAKE2B_DIGEST_BYTE_LEN).unwrap_unchecked();
             hasher.update(BLAKE2B_PERSONALIZATION_STRING);
 
-            Blake2bHasher(hasher)
+            Self(hasher)
         }
     }
 }

@@ -4,7 +4,7 @@
 //!
 //! ```
 //! use nam_sparse_merkle_tree::{
-//!     internal_blake2b::Blake2bHasher, default_store::DefaultStore,
+//!     blake2b_hasher::Blake2bHasher, default_store::DefaultStore,
 //!     error::Error, MerkleProof,
 //!     SparseMerkleTree, traits::Value, H256, Hash,
 //!     traits::Hasher,
@@ -55,20 +55,20 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(feature = "blake2b")]
+pub mod blake2b_hasher;
 pub mod default_store;
 pub mod error;
 pub mod h256;
-#[cfg(feature = "blake2b")]
-pub mod internal_blake2b;
 pub mod internal_key;
-pub mod internal_sha256;
 pub mod merge;
 pub mod merkle_proof;
-pub mod proof_ics23;
+pub mod sha256_hasher;
 #[cfg(test)]
 mod tests;
 pub mod traits;
 pub mod tree;
+pub mod turboshake_hasher;
 
 pub use h256::{H256, Hash};
 pub use internal_key::InternalKey;

@@ -1,8 +1,8 @@
 use crate::{
+    H256, Hash as KeyHash, InternalKey,
     error::Error,
     tree::{BranchNode, LeafNode},
     vec::Vec,
-    Hash as KeyHash, InternalKey, H256,
 };
 use core::hash::Hash;
 use core::ops::Deref;

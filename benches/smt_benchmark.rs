@@ -5,10 +5,10 @@ mod string_key;
 
 use criterion::{BenchmarkId, Criterion, Throughput};
 use nam_sparse_merkle_tree::{
-    default_store::DefaultStore, sha256::Sha256Hasher, tree::SparseMerkleTree, Hash, H256,
+    H256, Hash, default_store::DefaultStore, sha256::Sha256Hasher, tree::SparseMerkleTree,
 };
-use rand::{thread_rng, Rng};
-use string_key::{random_stringkey, StringKey, IBC_KEY_LIMIT};
+use rand::{Rng, thread_rng};
+use string_key::{IBC_KEY_LIMIT, StringKey, random_stringkey};
 
 const TARGET_LEAVES_COUNT: usize = 20;
 

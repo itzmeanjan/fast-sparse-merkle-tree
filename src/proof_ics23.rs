@@ -2,7 +2,7 @@ use ics23::{ExistenceProof, HashOp, InnerOp, InnerSpec, LeafOp, LengthOp, ProofS
 
 use crate::collections::VecDeque;
 use crate::error::{Error, Result};
-use crate::{traits::Value, vec::Vec, vec_macro, Key, MerkleProof, H256, TREE_HEIGHT};
+use crate::{H256, Key, MerkleProof, TREE_HEIGHT, traits::Value, vec::Vec, vec_macro};
 
 pub fn convert<K, V, const N: usize>(
     merkle_proof: MerkleProof,

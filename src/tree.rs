@@ -1,4 +1,5 @@
 use crate::{
+    EXPECTED_PATH_SIZE, H256, InternalKey, Key,
     collections::{BTreeMap, VecDeque},
     error::{Error, Result},
     merge::{hash_leaf, merge},
@@ -6,7 +7,7 @@ use crate::{
     proof_ics23,
     traits::{Hasher, Store, Value},
     vec::Vec,
-    vec_macro, InternalKey, Key, EXPECTED_PATH_SIZE, H256,
+    vec_macro,
 };
 #[cfg(feature = "borsh")]
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -171,11 +172,11 @@ where
             }
         }
         // delete previous leaf
-        if let Some(leaf) = self.store.get_leaf(&node)? {
-            if leaf.key == key {
-                self.store.remove_leaf(&node)?;
-                self.store.remove_branch(&node)?;
-            }
+        if let Some(leaf) = self.store.get_leaf(&node)?
+            && leaf.key == key
+        {
+            self.store.remove_leaf(&node)?;
+            self.store.remove_branch(&node)?;
         }
 
         // compute and store new leaf

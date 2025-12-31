@@ -1,11 +1,12 @@
 [package]
-authors = ["jjy <jjyruby@gmail.com>"]
-description = "(Namada fork) Sparse merkle tree implement in rust"
-edition = "2018"
-license = "MIT"
 name = "nam-sparse-merkle-tree"
-repository = "https://github.com/anoma/sparse-merkle-tree"
-version = "0.3.3-nam.0"
+authors = ["Anjan Roy <hello@itzmeanjan.in>"]
+description = "Sparse merkle tree implementation in rust"
+edition = "2024"
+resolver = "3"
+license = "MIT"
+repository = "https://github.com/itzmeanjan/sparse-merkle-tree"
+version = "0.1.0"
 
 [features]
 blake2b = ["blake2b-rs"]

@@ -78,7 +78,7 @@ mod tests;
 pub mod traits;
 pub mod tree;
 
-pub use h256::{Hash, H256};
+pub use h256::{H256, Hash};
 pub use internal_key::InternalKey;
 pub use merkle_proof::{CompiledMerkleProof, MerkleProof};
 pub use traits::Key;

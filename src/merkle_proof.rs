@@ -1,10 +1,11 @@
 use crate::{
+    H256, Key, TREE_HEIGHT,
     collections::{BTreeMap, VecDeque},
     error::{Error, Result},
     merge::{hash_leaf, merge},
     traits::{Hasher, Value},
     vec::Vec,
-    vec_macro, Key, H256, TREE_HEIGHT,
+    vec_macro,
 };
 use core::convert::TryInto;
 

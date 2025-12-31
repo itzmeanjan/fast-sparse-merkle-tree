@@ -2,8 +2,8 @@ mod padded_key;
 
 use super::*;
 use crate::{
-    blake2b::Blake2bHasher, default_store::DefaultStore, error::Error, sha256::Sha256Hasher,
-    MerkleProof, SparseMerkleTree,
+    MerkleProof, SparseMerkleTree, blake2b::Blake2bHasher, default_store::DefaultStore,
+    error::Error, sha256::Sha256Hasher,
 };
 use core::convert::{TryFrom, TryInto};
 use padded_key::PaddedKey;
@@ -287,12 +287,16 @@ fn test_merkle_proof(key: PaddedKey<32>, value: H256) {
             .compile(vec![(key, value)])
             .expect("compile proof");
         assert!(proof.proof().len() < EXPECTED_PROOF_SIZE);
-        assert!(proof
-            .verify::<Blake2bHasher, PaddedKey<32>, H256, 32>(tree.root(), vec![(key, value)])
-            .expect("verify"));
-        assert!(compiled_proof
-            .verify::<Blake2bHasher, PaddedKey<32>, H256, 32>(tree.root(), vec![(key, value)])
-            .expect("compiled verify"));
+        assert!(
+            proof
+                .verify::<Blake2bHasher, PaddedKey<32>, H256, 32>(tree.root(), vec![(key, value)])
+                .expect("verify")
+        );
+        assert!(
+            compiled_proof
+                .verify::<Blake2bHasher, PaddedKey<32>, H256, 32>(tree.root(), vec![(key, value)])
+                .expect("compiled verify")
+        );
     }
 }
 
@@ -319,7 +323,7 @@ fn test_ics23_non_membership_proof() {
         .map(|i| {
             (
                 PaddedKey::<115>::try_from(vec![i; 29]).expect("Test failed"),
-                H256::from(rand::thread_rng().gen::<[u8; 32]>()),
+                H256::from(rand::thread_rng().r#gen::<[u8; 32]>()),
             )
         })
         .collect();
@@ -350,7 +354,7 @@ fn test_ics23_membership_proof() {
         .map(|i| {
             (
                 PaddedKey::<115>::try_from(vec![i; 29]).expect("Test failed"),
-                H256::from(rand::thread_rng().gen::<[u8; 32]>()),
+                H256::from(rand::thread_rng().r#gen::<[u8; 32]>()),
             )
         })
         .collect();

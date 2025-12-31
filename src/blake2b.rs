@@ -1,4 +1,4 @@
-use crate::{traits::Hasher, H256};
+use crate::{H256, traits::Hasher};
 use blake2b_rs::{Blake2b, Blake2bBuilder};
 
 const BLAKE2B_KEY: &[u8] = &[];

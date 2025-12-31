@@ -1,4 +1,4 @@
-use crate::{string, H256};
+use crate::{H256, string};
 
 pub type Result<T> = ::core::result::Result<T, Error>;
 

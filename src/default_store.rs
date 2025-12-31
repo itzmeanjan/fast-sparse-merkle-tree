@@ -1,9 +1,8 @@
 use crate::{
-    collections,
+    H256, Key, collections,
     error::Error,
     traits::Store,
     tree::{BranchNode, LeafNode},
-    Key, H256,
 };
 #[cfg(feature = "borsh")]
 use borsh::{BorshDeserialize, BorshSerialize};

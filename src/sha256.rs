@@ -1,4 +1,4 @@
-use crate::{traits::Hasher, H256};
+use crate::{H256, traits::Hasher};
 use core::convert::TryInto;
 use sha2::{Digest, Sha256};
 

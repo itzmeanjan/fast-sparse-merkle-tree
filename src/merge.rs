@@ -1,6 +1,6 @@
+use crate::Key;
 use crate::h256::H256;
 use crate::traits::{Hasher, Value};
-use crate::Key;
 
 /// Merge two hashes
 /// this function is optimized for ZERO_HASH

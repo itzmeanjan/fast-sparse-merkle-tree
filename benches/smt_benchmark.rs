@@ -1,54 +1,93 @@
 #[macro_use]
 extern crate criterion;
 
-use criterion::{BenchmarkId, Criterion, Throughput};
+use criterion::{Criterion, Throughput};
 use nam_sparse_merkle_tree::{
     H256, Hash, default_store::DefaultStore, sha256_hasher::Sha256Hasher, tree::SparseMerkleTree,
     turboshake_hasher::TurboShake128Hasher,
 };
 use rand::Rng;
+use std::time::Duration;
 
-const TARGET_LEAVES_COUNT: usize = 20;
+const TARGET_LEAVES_COUNT: usize = 32;
+const NUM_LEAVES_IN_SMT: [usize; 3] = [1usize << 8, 1usize << 12, 1usize << 16];
+
+type Sha256SMT = SparseMerkleTree<Sha256Hasher, Hash, H256, DefaultStore<Hash, H256, 32>, 32>;
+type TurboShake128SMT =
+    SparseMerkleTree<TurboShake128Hasher, Hash, H256, DefaultStore<Hash, H256, 32>, 32>;
 
 fn random_h256<R: Rng + ?Sized>(rng: &mut R) -> H256 {
     rng.random::<[u8; std::mem::size_of::<H256>()]>().into()
 }
 
-fn bench_sha256_smt(c: &mut Criterion) {
-    type Sha256SMT = SparseMerkleTree<Sha256Hasher, Hash, H256, DefaultStore<Hash, H256, 32>, 32>;
+fn random_sha256_smt<R: Rng + ?Sized>(update_count: usize, rng: &mut R) -> (Sha256SMT, Vec<Hash>) {
+    let mut smt = Sha256SMT::default();
+    let mut keys = Vec::with_capacity(update_count);
 
-    fn random_sha256_smt<R: Rng + ?Sized>(
-        update_count: usize,
-        rng: &mut R,
-    ) -> (Sha256SMT, Vec<Hash>) {
-        let mut smt = Sha256SMT::default();
-        let mut keys = Vec::with_capacity(update_count);
+    for _ in 0..update_count {
+        let key = random_h256(rng);
+        let value = random_h256(rng);
 
-        for _ in 0..update_count {
-            let key = random_h256(rng);
-            let value = random_h256(rng);
-
-            smt.update(key.into(), value).unwrap();
-            keys.push(key.into());
-        }
-
-        (smt, keys)
+        smt.update(key.into(), value).unwrap();
+        keys.push(key.into());
     }
 
-    let mut group = c.benchmark_group("Sha256SMT update");
-    for size in [100, 1_000, 10_000, 100_000].iter() {
-        group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
+    (smt, keys)
+}
+
+fn random_turboshake128_smt<R: Rng + ?Sized>(
+    update_count: usize,
+    rng: &mut R,
+) -> (TurboShake128SMT, Vec<Hash>) {
+    let mut smt = TurboShake128SMT::default();
+    let mut keys = Vec::with_capacity(update_count);
+
+    for _ in 0..update_count {
+        let key = random_h256(rng);
+        let value = random_h256(rng);
+
+        smt.update(key.into(), value).unwrap();
+        keys.push(key.into());
+    }
+
+    (smt, keys)
+}
+
+fn bench_smt_update(c: &mut Criterion) {
+    let mut group = c.benchmark_group("smt_update");
+
+    for size in NUM_LEAVES_IN_SMT.iter() {
+        group.bench_with_input(format!("sha256/{}", size), size, |b, &size| {
             let mut rng = rand::rng();
             b.iter(|| random_sha256_smt(size, &mut rng));
         });
-    }
-    group.finish();
 
-    let mut group = c.benchmark_group("Sha256SMT get");
-    for size in [100, 1_000, 10_000, 100_000].iter() {
-        group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
+        group.bench_with_input(format!("turboshake128/{}", size), size, |b, &size| {
             let mut rng = rand::rng();
-            let (smt, _keys) = random_sha256_smt(size, &mut rng);
+            b.iter(|| random_turboshake128_smt(size, &mut rng));
+        });
+    }
+
+    group.finish();
+}
+
+fn bench_smt_get(c: &mut Criterion) {
+    let mut group = c.benchmark_group("smt_get");
+
+    for size in NUM_LEAVES_IN_SMT.iter() {
+        group.bench_with_input(format!("sha256/{}", size), size, |b, &size| {
+            let mut rng = rand::rng();
+            let (smt, _) = random_sha256_smt(size, &mut rng);
+
+            b.iter(|| {
+                let key = random_h256(&mut rng).into();
+                smt.get(&key).unwrap();
+            });
+        });
+
+        group.bench_with_input(format!("turboshake128/{}", size), size, |b, &size| {
+            let mut rng = rand::rng();
+            let (smt, _) = random_turboshake128_smt(size, &mut rng);
 
             b.iter(|| {
                 let key = random_h256(&mut rng).into();
@@ -56,152 +95,121 @@ fn bench_sha256_smt(c: &mut Criterion) {
             });
         });
     }
+
     group.finish();
+}
 
-    c.bench_function("Sha256SMT generate merkle proof", |b| {
-        let mut rng = rand::rng();
+fn bench_smt_gen_merkle_proof(c: &mut Criterion) {
+    let mut group = c.benchmark_group("smt_gen_merkle_proof");
 
-        let (smt, mut keys) = random_sha256_smt(10_000, &mut rng);
-        keys.dedup();
+    for size in NUM_LEAVES_IN_SMT.iter() {
+        group.bench_with_input(format!("sha256/{}", size), size, |b, &size| {
+            let mut rng = rand::rng();
 
-        let keys: Vec<_> = keys.into_iter().take(TARGET_LEAVES_COUNT).collect();
-        b.iter(|| smt.merkle_proof(keys.clone()).unwrap());
-    });
+            let (smt, mut keys) = random_sha256_smt(size, &mut rng);
+            keys.dedup();
 
-    c.bench_function("Sha256SMT verify merkle proof", |b| {
-        let mut rng = rand::rng();
-        let (smt, mut keys) = random_sha256_smt(10_000, &mut rng);
-        keys.dedup();
-
-        let leaves: Vec<_> = keys
-            .iter()
-            .take(TARGET_LEAVES_COUNT)
-            .map(|k| (*k, smt.get(k).unwrap()))
-            .collect();
-        let proof = smt
-            .merkle_proof(keys.into_iter().take(TARGET_LEAVES_COUNT).collect())
-            .unwrap();
-
-        let root = smt.root();
-        b.iter(|| {
-            assert!(
-                proof
-                    .clone()
-                    .verify::<Sha256Hasher, Hash, H256, 32>(root, leaves.clone())
-                    .expect("must pass verification")
-            );
+            let keys: Vec<_> = keys.into_iter().take(TARGET_LEAVES_COUNT).collect();
+            b.iter(|| smt.merkle_proof(keys.clone()).unwrap());
         });
-    });
 
-    let mut group = c.benchmark_group("Sha256SMT validate tree");
-    for size in [100, 1_000, 10_000, 100_000].iter() {
+        group.bench_with_input(format!("turboshake128/{}", size), size, |b, &size| {
+            let mut rng = rand::rng();
+
+            let (smt, mut keys) = random_turboshake128_smt(size, &mut rng);
+            keys.dedup();
+
+            let keys: Vec<_> = keys.into_iter().take(TARGET_LEAVES_COUNT).collect();
+            b.iter(|| smt.merkle_proof(keys.clone()).unwrap());
+        });
+    }
+
+    group.finish();
+}
+
+fn bench_smt_verify_merkle_proof(c: &mut Criterion) {
+    let mut group = c.benchmark_group("smt_verify_merkle_proof");
+
+    for size in NUM_LEAVES_IN_SMT.iter() {
+        group.bench_with_input(format!("sha256/{}", size), size, |b, &size| {
+            let mut rng = rand::rng();
+            let (smt, mut keys) = random_sha256_smt(size, &mut rng);
+            keys.dedup();
+
+            let leaves: Vec<_> = keys
+                .iter()
+                .take(TARGET_LEAVES_COUNT)
+                .map(|k| (*k, smt.get(k).unwrap()))
+                .collect();
+            let proof = smt
+                .merkle_proof(keys.into_iter().take(TARGET_LEAVES_COUNT).collect())
+                .unwrap();
+
+            let root = smt.root();
+            b.iter(|| {
+                assert!(
+                    proof
+                        .clone()
+                        .verify::<Sha256Hasher, Hash, H256, 32>(root, leaves.clone())
+                        .expect("must pass verification")
+                );
+            });
+        });
+
+        group.bench_with_input(format!("turboshake128/{}", size), size, |b, &size| {
+            let mut rng = rand::rng();
+            let (smt, mut keys) = random_turboshake128_smt(size, &mut rng);
+            keys.dedup();
+
+            let leaves: Vec<_> = keys
+                .iter()
+                .take(TARGET_LEAVES_COUNT)
+                .map(|k| (*k, smt.get(k).unwrap()))
+                .collect();
+            let proof = smt
+                .merkle_proof(keys.into_iter().take(TARGET_LEAVES_COUNT).collect())
+                .unwrap();
+
+            let root = smt.root();
+            b.iter(|| {
+                assert!(
+                    proof
+                        .clone()
+                        .verify::<TurboShake128Hasher, Hash, H256, 32>(root, leaves.clone())
+                        .expect("must pass verification")
+                );
+            });
+        });
+    }
+
+    group.finish();
+}
+
+fn bench_smt_validate(c: &mut Criterion) {
+    let mut group = c.benchmark_group("smt_validate");
+
+    for size in NUM_LEAVES_IN_SMT.iter() {
         group.throughput(Throughput::Elements(*size as u64));
-        group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
+        group.bench_with_input(format!("sha256/{}", size), size, |b, &size| {
             let mut rng = rand::rng();
             let (smt, _) = random_sha256_smt(size, &mut rng);
 
             b.iter(|| assert!(smt.validate()));
         });
-    }
-    group.finish();
-}
 
-fn bench_turboshake128_smt(c: &mut Criterion) {
-    type TurboShake128SMT =
-        SparseMerkleTree<TurboShake128Hasher, Hash, H256, DefaultStore<Hash, H256, 32>, 32>;
-
-    fn random_turboshake128_smt<R: Rng + ?Sized>(
-        update_count: usize,
-        rng: &mut R,
-    ) -> (TurboShake128SMT, Vec<Hash>) {
-        let mut smt = TurboShake128SMT::default();
-        let mut keys = Vec::with_capacity(update_count);
-
-        for _ in 0..update_count {
-            let key = random_h256(rng);
-            let value = random_h256(rng);
-
-            smt.update(key.into(), value).unwrap();
-            keys.push(key.into());
-        }
-
-        (smt, keys)
-    }
-
-    let mut group = c.benchmark_group("TurboShake128SMT update");
-    for size in [100, 1_000, 10_000, 100_000].iter() {
-        group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
-            let mut rng = rand::rng();
-            b.iter(|| random_turboshake128_smt(size, &mut rng));
-        });
-    }
-    group.finish();
-
-    let mut group = c.benchmark_group("TurboShake128SMT get");
-    for size in [100, 1_000, 10_000, 100_000].iter() {
-        group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
-            let mut rng = rand::rng();
-            let (smt, _keys) = random_turboshake128_smt(size, &mut rng);
-
-            b.iter(|| {
-                let key = random_h256(&mut rng).into();
-                smt.get(&key).unwrap();
-            });
-        });
-    }
-    group.finish();
-
-    c.bench_function("TurboShake128SMT generate merkle proof", |b| {
-        let mut rng = rand::rng();
-
-        let (smt, mut keys) = random_turboshake128_smt(10_000, &mut rng);
-        keys.dedup();
-
-        let keys: Vec<_> = keys.into_iter().take(TARGET_LEAVES_COUNT).collect();
-        b.iter(|| smt.merkle_proof(keys.clone()).unwrap());
-    });
-
-    c.bench_function("TurboShake128SMT verify merkle proof", |b| {
-        let mut rng = rand::rng();
-        let (smt, mut keys) = random_turboshake128_smt(10_000, &mut rng);
-        keys.dedup();
-
-        let leaves: Vec<_> = keys
-            .iter()
-            .take(TARGET_LEAVES_COUNT)
-            .map(|k| (*k, smt.get(k).unwrap()))
-            .collect();
-        let proof = smt
-            .merkle_proof(keys.into_iter().take(TARGET_LEAVES_COUNT).collect())
-            .unwrap();
-
-        let root = smt.root();
-        b.iter(|| {
-            assert!(
-                proof
-                    .clone()
-                    .verify::<Sha256Hasher, Hash, H256, 32>(root, leaves.clone())
-                    .expect("must pass verification")
-            );
-        });
-    });
-
-    let mut group = c.benchmark_group("TurboShake128SMT validate tree");
-    for size in [100, 1_000, 10_000, 100_000].iter() {
-        group.throughput(Throughput::Elements(*size as u64));
-        group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, &size| {
+        group.bench_with_input(format!("turboshake128/{}", size), size, |b, &size| {
             let mut rng = rand::rng();
             let (smt, _) = random_turboshake128_smt(size, &mut rng);
 
             b.iter(|| assert!(smt.validate()));
         });
     }
+
     group.finish();
 }
 
 criterion_group!(
     name = smt;
-    config = Criterion::default().sample_size(100);
-    targets = bench_sha256_smt, bench_turboshake128_smt
-);
+    config = Criterion::default().sample_size(100).measurement_time(Duration::from_secs(60));
+    targets = bench_smt_update, bench_smt_get, bench_smt_gen_merkle_proof, bench_smt_verify_merkle_proof, bench_smt_validate);
 criterion_main!(smt);

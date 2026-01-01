@@ -11,9 +11,7 @@ impl Default for TurboShake128Hasher {
     fn default() -> Self {
         unsafe {
             let mut hasher = TurboShake128::default();
-            hasher
-                .absorb(TURBOSHAKE128_PERSONALIZATION_STRING)
-                .unwrap_unchecked();
+            hasher.absorb(TURBOSHAKE128_PERSONALIZATION_STRING).unwrap_unchecked();
 
             Self(hasher)
         }
@@ -31,9 +29,7 @@ impl Hasher for TurboShake128Hasher {
         let mut digest = [0u8; TURBOSHAKE128_DIGEST_BYTE_LEN];
 
         unsafe {
-            self.0
-                .finalize::<TURBOSHAKE128_DOMAIN_SEPARATOR>()
-                .unwrap_unchecked();
+            self.0.finalize::<TURBOSHAKE128_DOMAIN_SEPARATOR>().unwrap_unchecked();
             self.0.squeeze(&mut digest).unwrap_unchecked();
         }
 

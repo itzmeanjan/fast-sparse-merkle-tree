@@ -47,10 +47,7 @@ impl MerkleProof {
     }
 
     /// convert merkle proof into CompiledMerkleProof
-    pub fn compile<K, const N: usize>(
-        self,
-        mut leaves: Vec<(K, H256)>,
-    ) -> Result<CompiledMerkleProof>
+    pub fn compile<K, const N: usize>(self, mut leaves: Vec<(K, H256)>) -> Result<CompiledMerkleProof>
     where
         K: Key<N>,
     {
@@ -70,11 +67,7 @@ impl MerkleProof {
         // sort leaves
         leaves.sort_unstable_by_key(|(k, _v)| **k);
         // tree_buf: (height, key) -> (key_index, node)
-        let mut tree_buf: BTreeMap<_, _> = leaves
-            .into_iter()
-            .enumerate()
-            .map(|(i, (k, _v))| ((0, *k), (i, leaf_program(i))))
-            .collect();
+        let mut tree_buf: BTreeMap<_, _> = leaves.into_iter().enumerate().map(|(i, (k, _v))| ((0, *k), (i, leaf_program(i)))).collect();
         // rebuild the tree from bottom to top
         while !tree_buf.is_empty() {
             // pop_front from tree_buf, the API is unstable
@@ -95,34 +88,31 @@ impl MerkleProof {
                 sibling_key.set_bit(height)
             }
 
-            let (parent_key, parent_program, height) =
-                if Some(&(height, sibling_key)) == tree_buf.keys().next() {
-                    let (_leaf_index, sibling_program) = tree_buf
-                        .remove(&(height, sibling_key))
-                        .expect("pop sibling");
-                    let parent_key = key.parent_path(height);
-                    let parent_program = merge_program(&program, &sibling_program, height)?;
-                    (parent_key, parent_program, height)
-                } else {
-                    let merge_height = leaves_path[leaf_index].front().copied().unwrap_or(height);
-                    if height != merge_height {
-                        debug_assert!(height < merge_height);
-                        let parent_key = key.copy_bits(merge_height..);
-                        // skip zeros
-                        tree_buf.insert((merge_height, parent_key), (leaf_index, program));
-                        continue;
-                    }
-                    let (proof, proof_height) = proof.pop_front().expect("pop proof");
-                    debug_assert_eq!(proof_height, leaves_path[leaf_index][0]);
-                    debug_assert!(height <= proof_height);
-                    if height < proof_height {
-                        height = proof_height;
-                    }
+            let (parent_key, parent_program, height) = if Some(&(height, sibling_key)) == tree_buf.keys().next() {
+                let (_leaf_index, sibling_program) = tree_buf.remove(&(height, sibling_key)).expect("pop sibling");
+                let parent_key = key.parent_path(height);
+                let parent_program = merge_program(&program, &sibling_program, height)?;
+                (parent_key, parent_program, height)
+            } else {
+                let merge_height = leaves_path[leaf_index].front().copied().unwrap_or(height);
+                if height != merge_height {
+                    debug_assert!(height < merge_height);
+                    let parent_key = key.copy_bits(merge_height..);
+                    // skip zeros
+                    tree_buf.insert((merge_height, parent_key), (leaf_index, program));
+                    continue;
+                }
+                let (proof, proof_height) = proof.pop_front().expect("pop proof");
+                debug_assert_eq!(proof_height, leaves_path[leaf_index][0]);
+                debug_assert!(height <= proof_height);
+                if height < proof_height {
+                    height = proof_height;
+                }
 
-                    let parent_key = key.parent_path(height);
-                    let parent_program = proof_program(&program, proof, height);
-                    (parent_key, parent_program, height)
-                };
+                let parent_key = key.parent_path(height);
+                let parent_program = proof_program(&program, proof, height);
+                (parent_key, parent_program, height)
+            };
 
             leaves_path[leaf_index].pop_front();
             tree_buf.insert((height + 1, parent_key), (leaf_index, parent_program));
@@ -136,10 +126,7 @@ impl MerkleProof {
     ///
     /// return EmptyProof error when proof is empty
     /// return CorruptedProof error when proof is invalid
-    pub fn compute_root<H: Hasher + Default, K, V, const N: usize>(
-        self,
-        mut leaves: Vec<(K, V)>,
-    ) -> Result<H256>
+    pub fn compute_root<H: Hasher + Default, K, V, const N: usize>(self, mut leaves: Vec<(K, V)>) -> Result<H256>
     where
         K: Key<N>,
         V: Value,
@@ -184,25 +171,22 @@ impl MerkleProof {
             if !key.get_bit(height) {
                 sibling_key.set_bit(height)
             }
-            let (sibling, sibling_height) =
-                if Some(&(height, sibling_key)) == tree_buf.keys().next() {
-                    let (_leaf_index, sibling) = tree_buf
-                        .remove(&(height, sibling_key))
-                        .expect("pop sibling");
-                    (sibling, height)
-                } else {
-                    let merge_height = leaves_path[leaf_index].front().copied().unwrap_or(height);
-                    if height != merge_height {
-                        debug_assert!(height < merge_height);
-                        let parent_key = key.copy_bits(merge_height..);
-                        // skip zeros
-                        tree_buf.insert((merge_height, parent_key), (leaf_index, node));
-                        continue;
-                    }
-                    let (node, height) = proof.pop_front().expect("pop proof");
-                    debug_assert_eq!(height, leaves_path[leaf_index][0]);
-                    (node, height)
-                };
+            let (sibling, sibling_height) = if Some(&(height, sibling_key)) == tree_buf.keys().next() {
+                let (_leaf_index, sibling) = tree_buf.remove(&(height, sibling_key)).expect("pop sibling");
+                (sibling, height)
+            } else {
+                let merge_height = leaves_path[leaf_index].front().copied().unwrap_or(height);
+                if height != merge_height {
+                    debug_assert!(height < merge_height);
+                    let parent_key = key.copy_bits(merge_height..);
+                    // skip zeros
+                    tree_buf.insert((merge_height, parent_key), (leaf_index, node));
+                    continue;
+                }
+                let (node, height) = proof.pop_front().expect("pop proof");
+                debug_assert_eq!(height, leaves_path[leaf_index][0]);
+                (node, height)
+            };
             debug_assert!(height <= sibling_height);
             if height < sibling_height {
                 height = sibling_height;
@@ -224,11 +208,7 @@ impl MerkleProof {
 
     /// Verify merkle proof
     /// see compute_root_from_proof
-    pub fn verify<H: Hasher + Default, K, V, const N: usize>(
-        self,
-        root: &H256,
-        leaves: Vec<(K, V)>,
-    ) -> Result<bool>
+    pub fn verify<H: Hasher + Default, K, V, const N: usize>(self, root: &H256, leaves: Vec<(K, V)>) -> Result<bool>
     where
         K: Key<N>,
         V: Value,
@@ -249,33 +229,22 @@ fn leaf_program(leaf_index: usize) -> (Vec<u8>, Option<Range>) {
     )
 }
 
-fn proof_program(
-    child: &(Vec<u8>, Option<Range>),
-    proof: H256,
-    height: usize,
-) -> (Vec<u8>, Option<Range>) {
+fn proof_program(child: &(Vec<u8>, Option<Range>), proof: H256, height: usize) -> (Vec<u8>, Option<Range>) {
     let (child_program, child_range) = child;
     let mut program = Vec::new();
     let height = height as u64;
     program.resize(41 + child_program.len(), 0x50);
     program[..child_program.len()].copy_from_slice(child_program);
-    program[child_program.len() + 1..child_program.len() + 9]
-        .copy_from_slice(&height.to_be_bytes());
+    program[child_program.len() + 1..child_program.len() + 9].copy_from_slice(&height.to_be_bytes());
     program[child_program.len() + 9..].copy_from_slice(proof.as_slice());
     (program, child_range.clone())
 }
 
-fn merge_program(
-    a: &(Vec<u8>, Option<Range>),
-    b: &(Vec<u8>, Option<Range>),
-    height: usize,
-) -> Result<(Vec<u8>, Option<Range>)> {
+fn merge_program(a: &(Vec<u8>, Option<Range>), b: &(Vec<u8>, Option<Range>), height: usize) -> Result<(Vec<u8>, Option<Range>)> {
     let (a_program, a_range) = a;
     let (b_program, b_range) = b;
     let (a_comes_first, range) = if a_range.is_none() || b_range.is_none() {
-        let range = if a_range.is_none() { b_range } else { a_range }
-            .clone()
-            .unwrap();
+        let range = if a_range.is_none() { b_range } else { a_range }.clone().unwrap();
         (true, range)
     } else {
         let a_range = a_range.clone().unwrap();
@@ -312,10 +281,7 @@ fn merge_program(
 pub struct CompiledMerkleProof(pub Vec<u8>);
 
 impl CompiledMerkleProof {
-    pub fn compute_root<H: Hasher + Default, K, V, const N: usize>(
-        &self,
-        mut leaves: Vec<(K, V)>,
-    ) -> Result<H256>
+    pub fn compute_root<H: Hasher + Default, K, V, const N: usize>(&self, mut leaves: Vec<(K, V)>) -> Result<H256>
     where
         K: Key<N>,
         V: Value,
@@ -406,11 +372,7 @@ impl CompiledMerkleProof {
         Ok(stack[0].1)
     }
 
-    pub fn verify<H: Hasher + Default, K, V, const N: usize>(
-        &self,
-        root: &H256,
-        leaves: Vec<(K, V)>,
-    ) -> Result<bool>
+    pub fn verify<H: Hasher + Default, K, V, const N: usize>(&self, root: &H256, leaves: Vec<(K, V)>) -> Result<bool>
     where
         K: Key<N>,
         V: Value,

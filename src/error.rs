@@ -35,11 +35,7 @@ impl core::fmt::Display for Error {
                 write!(f, "Empty keys")?;
             }
             Error::IncorrectNumberOfLeaves { expected, actual } => {
-                write!(
-                    f,
-                    "Incorrect number of leaves, expected {} actual {}",
-                    expected, actual
-                )?;
+                write!(f, "Incorrect number of leaves, expected {} actual {}", expected, actual)?;
             }
             Error::Store(err_msg) => {
                 write!(f, "Backend store error: {}", err_msg)?;

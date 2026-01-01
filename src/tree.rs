@@ -31,11 +31,7 @@ where
 {
     fn branch(&self, height: usize) -> (&H256, &H256) {
         let is_right = self.key.get_bit(height);
-        if is_right {
-            (&self.sibling, &self.node)
-        } else {
-            (&self.node, &self.sibling)
-        }
+        if is_right { (&self.sibling, &self.node) } else { (&self.node, &self.sibling) }
     }
 }
 
@@ -125,10 +121,7 @@ where
         // walk path from root to leaf
         let mut node = self.root;
         let mut branch = self.store.get_branch(&node)?;
-        let mut height = branch
-            .as_ref()
-            .map(|b| max(b.key.fork_height(&key), b.fork_height))
-            .unwrap_or(0);
+        let mut height = branch.as_ref().map(|b| max(b.key.fork_height(&key), b.fork_height)).unwrap_or(0);
         // branch.is_none() represents the descendants are zeros, so we can stop the
         // loop
         while branch.is_some() {
@@ -200,11 +193,7 @@ where
             let sibling = path.remove(&height).unwrap();
 
             let is_right = key.get_bit(height);
-            let parent = if is_right {
-                merge::<H>(&sibling, &node)
-            } else {
-                merge::<H>(&node, &sibling)
-            };
+            let parent = if is_right { merge::<H>(&sibling, &node) } else { merge::<H>(&node, &sibling) };
 
             if !node.is_zero() {
                 // node exists
@@ -255,17 +244,9 @@ where
 
     /// fetch merkle path of key into cache
     /// cache: (height, key) -> node
-    fn fetch_merkle_path(
-        &self,
-        key: &K,
-        cache: &mut BTreeMap<(usize, InternalKey<N>), H256>,
-    ) -> Result<()> {
+    fn fetch_merkle_path(&self, key: &K, cache: &mut BTreeMap<(usize, InternalKey<N>), H256>) -> Result<()> {
         let mut node = self.root;
-        let mut height = self
-            .store
-            .get_branch(&node)?
-            .map(|b| max(b.key.fork_height(key), b.fork_height))
-            .unwrap_or(0);
+        let mut height = self.store.get_branch(&node)?.map(|b| max(b.key.fork_height(key), b.fork_height)).unwrap_or(0);
         while !node.is_zero() {
             // the descendants are zeros, so we can break the loop
             if node.is_zero() {
@@ -274,8 +255,7 @@ where
             match self.store.get_branch(&node)? {
                 Some(branch_node) => {
                     if height > branch_node.fork_height {
-                        let fork_height =
-                            max(key.fork_height(&branch_node.key), branch_node.fork_height);
+                        let fork_height = max(key.fork_height(&branch_node.key), branch_node.fork_height);
 
                         let is_right = key.get_bit(fork_height);
                         let mut sibling_key = key.parent_path(fork_height);
@@ -284,9 +264,7 @@ where
                             sibling_key.set_bit(height);
                         };
                         if !node.is_zero() {
-                            cache
-                                .entry((fork_height as usize, sibling_key))
-                                .or_insert(node);
+                            cache.entry((fork_height as usize, sibling_key)).or_insert(node);
                         }
                         break;
                     }
@@ -312,8 +290,7 @@ where
                     };
                     cache.insert((height, sibling_key), sibling);
                     if let Some(branch_node) = self.store.get_branch(&node)? {
-                        let fork_height =
-                            max(key.fork_height(&branch_node.key), branch_node.fork_height);
+                        let fork_height = max(key.fork_height(&branch_node.key), branch_node.fork_height);
                         height = fork_height;
                     }
                 }
@@ -347,11 +324,7 @@ where
         let keys_len = keys.len();
         // build merkle proofs from bottom to up
         // (key, height, key_index)
-        let mut queue: VecDeque<(_, usize, usize)> = keys
-            .into_iter()
-            .enumerate()
-            .map(|(i, k)| (*k, 0, i))
-            .collect();
+        let mut queue: VecDeque<(_, usize, usize)> = keys.into_iter().enumerate().map(|(i, k)| (*k, 0, i)).collect();
 
         while let Some((key, height, leaf_index)) = queue.pop_front() {
             if queue.is_empty() && cache.is_empty() || height == 8 * N {
@@ -372,11 +345,7 @@ where
                 // sibling on right
                 sibling_key.set_bit(height);
             }
-            if Some((&sibling_key, &height))
-                == queue
-                    .front()
-                    .map(|(sibling_key, height, _leaf_index)| (sibling_key, height))
-            {
+            if Some((&sibling_key, &height)) == queue.front().map(|(sibling_key, height, _leaf_index)| (sibling_key, height)) {
                 // drop the sibling, mark sibling's merkle path
                 let (_sibling_key, height, leaf_index) = queue.pop_front().unwrap();
                 leaves_path[leaf_index].push(height);
@@ -418,11 +387,7 @@ where
             return self.root == H256::zero();
         }
 
-        let sorted_leaves = self
-            .store
-            .sorted_leaves()
-            .map(|(k, v)| (k, v.clone()))
-            .collect::<Vec<_>>();
+        let sorted_leaves = self.store.sorted_leaves().map(|(k, v)| (k, v.clone())).collect::<Vec<_>>();
         // iterator over consecutive pairs of leaves
         let pairs = sorted_leaves.iter().tuple_windows::<(_, _)>();
 

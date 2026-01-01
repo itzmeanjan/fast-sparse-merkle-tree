@@ -23,9 +23,9 @@ impl<const N: usize> BorshDeserialize for InternalKey<N> {
     fn deserialize_reader<R: Read>(reader: &mut R) -> std::io::Result<Self> {
         use std::io::ErrorKind;
         let bytes: Vec<u8> = BorshDeserialize::deserialize_reader(reader)?;
-        let bytes: [u8; N] = bytes.try_into().map_err(|_| {
-            std::io::Error::new(ErrorKind::InvalidData, "Input byte vector is too large")
-        })?;
+        let bytes: [u8; N] = bytes
+            .try_into()
+            .map_err(|_| std::io::Error::new(ErrorKind::InvalidData, "Input byte vector is too large"))?;
         Ok(InternalKey(bytes))
     }
 }
@@ -87,10 +87,7 @@ impl<const N: usize> InternalKey<N> {
     /// Treat InternalKey as a path in a tree
     /// return parent_path of self
     pub fn parent_path(&self, height: usize) -> Self {
-        height
-            .checked_add(1)
-            .map(|i| self.copy_bits(i..))
-            .unwrap_or_else(InternalKey::zero)
+        height.checked_add(1).map(|i| self.copy_bits(i..)).unwrap_or_else(InternalKey::zero)
     }
 
     /// Copy bits and return a new InternalKey
@@ -133,9 +130,7 @@ impl<const N: usize> InternalKey<N> {
         }
 
         // copy remain bits
-        for i in (start..core::cmp::min((array_size - end_byte) * BYTE_SIZE, end))
-            .chain(core::cmp::max((array_size - start_byte) * BYTE_SIZE, start)..end)
-        {
+        for i in (start..core::cmp::min((array_size - end_byte) * BYTE_SIZE, end)).chain(core::cmp::max((array_size - start_byte) * BYTE_SIZE, start)..end) {
             if self.get_bit(i) {
                 target.set_bit(i)
             }

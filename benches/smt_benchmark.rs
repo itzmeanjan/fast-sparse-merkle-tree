@@ -3,8 +3,7 @@ extern crate criterion;
 
 use criterion::{Criterion, Throughput};
 use nam_sparse_merkle_tree::{
-    H256, Hash, default_store::DefaultStore, sha256_hasher::Sha256Hasher, tree::SparseMerkleTree,
-    turboshake_hasher::TurboShake128Hasher,
+    H256, Hash, default_store::DefaultStore, sha256_hasher::Sha256Hasher, tree::SparseMerkleTree, turboshake_hasher::TurboShake128Hasher,
 };
 use rand::Rng;
 use std::time::Duration;
@@ -13,8 +12,7 @@ const TARGET_LEAVES_COUNT: usize = 32;
 const NUM_LEAVES_IN_SMT: [usize; 3] = [1usize << 8, 1usize << 12, 1usize << 16];
 
 type Sha256SMT = SparseMerkleTree<Sha256Hasher, Hash, H256, DefaultStore<Hash, H256, 32>, 32>;
-type TurboShake128SMT =
-    SparseMerkleTree<TurboShake128Hasher, Hash, H256, DefaultStore<Hash, H256, 32>, 32>;
+type TurboShake128SMT = SparseMerkleTree<TurboShake128Hasher, Hash, H256, DefaultStore<Hash, H256, 32>, 32>;
 
 fn random_h256<R: Rng + ?Sized>(rng: &mut R) -> H256 {
     rng.random::<[u8; std::mem::size_of::<H256>()]>().into()
@@ -35,10 +33,7 @@ fn random_sha256_smt<R: Rng + ?Sized>(update_count: usize, rng: &mut R) -> (Sha2
     (smt, keys)
 }
 
-fn random_turboshake128_smt<R: Rng + ?Sized>(
-    update_count: usize,
-    rng: &mut R,
-) -> (TurboShake128SMT, Vec<Hash>) {
+fn random_turboshake128_smt<R: Rng + ?Sized>(update_count: usize, rng: &mut R) -> (TurboShake128SMT, Vec<Hash>) {
     let mut smt = TurboShake128SMT::default();
     let mut keys = Vec::with_capacity(update_count);
 
@@ -136,14 +131,8 @@ fn bench_smt_verify_merkle_proof(c: &mut Criterion) {
             let (smt, mut keys) = random_sha256_smt(size, &mut rng);
             keys.dedup();
 
-            let leaves: Vec<_> = keys
-                .iter()
-                .take(TARGET_LEAVES_COUNT)
-                .map(|k| (*k, smt.get(k).unwrap()))
-                .collect();
-            let proof = smt
-                .merkle_proof(keys.into_iter().take(TARGET_LEAVES_COUNT).collect())
-                .unwrap();
+            let leaves: Vec<_> = keys.iter().take(TARGET_LEAVES_COUNT).map(|k| (*k, smt.get(k).unwrap())).collect();
+            let proof = smt.merkle_proof(keys.into_iter().take(TARGET_LEAVES_COUNT).collect()).unwrap();
 
             let root = smt.root();
             b.iter(|| {
@@ -161,14 +150,8 @@ fn bench_smt_verify_merkle_proof(c: &mut Criterion) {
             let (smt, mut keys) = random_turboshake128_smt(size, &mut rng);
             keys.dedup();
 
-            let leaves: Vec<_> = keys
-                .iter()
-                .take(TARGET_LEAVES_COUNT)
-                .map(|k| (*k, smt.get(k).unwrap()))
-                .collect();
-            let proof = smt
-                .merkle_proof(keys.into_iter().take(TARGET_LEAVES_COUNT).collect())
-                .unwrap();
+            let leaves: Vec<_> = keys.iter().take(TARGET_LEAVES_COUNT).map(|k| (*k, smt.get(k).unwrap())).collect();
+            let proof = smt.merkle_proof(keys.into_iter().take(TARGET_LEAVES_COUNT).collect()).unwrap();
 
             let root = smt.root();
             b.iter(|| {

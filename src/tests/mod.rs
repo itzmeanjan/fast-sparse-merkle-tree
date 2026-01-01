@@ -1,18 +1,14 @@
 mod padded_key;
 
 use super::*;
-use crate::{
-    MerkleProof, SparseMerkleTree, blake2b_hasher::Blake2bHasher, default_store::DefaultStore,
-    error::Error, traits::Hasher,
-};
+use crate::{MerkleProof, SparseMerkleTree, blake2b_hasher::Blake2bHasher, default_store::DefaultStore, error::Error, traits::Hasher};
 use core::convert::{TryFrom, TryInto};
 use padded_key::PaddedKey;
 use proptest::prelude::*;
 use rand::prelude::{Rng, SliceRandom};
 use sha2::digest::{Update, VariableOutput};
 
-type Smt<const N: usize> =
-    SparseMerkleTree<Blake2bHasher, PaddedKey<N>, H256, DefaultStore<PaddedKey<N>, H256, N>, N>;
+type Smt<const N: usize> = SparseMerkleTree<Blake2bHasher, PaddedKey<N>, H256, DefaultStore<PaddedKey<N>, H256, N>, N>;
 
 #[test]
 fn test_default_root() {
@@ -23,8 +19,7 @@ fn test_default_root() {
     assert!(tree.validate());
 
     // insert a key-value
-    tree.update(H256::zero().into(), [42u8; 32].into())
-        .expect("update");
+    tree.update(H256::zero().into(), [42u8; 32].into()).expect("update");
     assert_ne!(tree.root(), &H256::zero());
     assert_ne!(tree.store().branches_map().len(), 0);
     assert_ne!(tree.store().leaves_map().len(), 0);
@@ -32,8 +27,7 @@ fn test_default_root() {
     assert_eq!(tree.get(&zero).expect("get"), [42u8; 32].into());
     assert!(tree.validate());
     // update zero is to delete the key
-    tree.update(H256::zero().into(), H256::zero())
-        .expect("update");
+    tree.update(H256::zero().into(), H256::zero()).expect("update");
     assert_eq!(tree.root(), &H256::zero());
     assert_eq!(tree.get(&zero).expect("get"), H256::zero());
     assert!(tree.validate());
@@ -44,24 +38,14 @@ fn test_default_tree() {
     let tree = Smt::default();
     let zero: PaddedKey<32> = H256::zero().into();
     assert_eq!(tree.get(&zero).expect("get"), H256::zero());
-    let proof = tree
-        .merkle_proof(vec![H256::zero().into()])
-        .expect("merkle proof");
+    let proof = tree.merkle_proof(vec![H256::zero().into()]).expect("merkle proof");
     let root = proof
-        .compute_root::<Blake2bHasher, PaddedKey<32>, H256, 32>(vec![(
-            H256::zero().into(),
-            H256::zero(),
-        )])
+        .compute_root::<Blake2bHasher, PaddedKey<32>, H256, 32>(vec![(H256::zero().into(), H256::zero())])
         .expect("root");
     assert_eq!(&root, tree.root());
-    let proof = tree
-        .merkle_proof(vec![H256::zero().into()])
-        .expect("merkle proof");
+    let proof = tree.merkle_proof(vec![H256::zero().into()]).expect("merkle proof");
     let root2 = proof
-        .compute_root::<Blake2bHasher, PaddedKey<32>, H256, 32>(vec![(
-            H256::zero().into(),
-            [42u8; 32].into(),
-        )])
+        .compute_root::<Blake2bHasher, PaddedKey<32>, H256, 32>(vec![(H256::zero().into(), [42u8; 32].into())])
         .expect("root");
     assert_ne!(&root2, tree.root());
 }
@@ -69,24 +53,12 @@ fn test_default_tree() {
 #[test]
 fn test_default_merkle_proof() {
     let proof = MerkleProof::new(Default::default(), Default::default());
-    let result = proof.compute_root::<Blake2bHasher, PaddedKey<50>, H256, 50>(vec![(
-        [42u8; 50].into(),
-        [42u8; 32].into(),
-    )]);
-    assert_eq!(
-        result.unwrap_err(),
-        Error::IncorrectNumberOfLeaves {
-            expected: 0,
-            actual: 1
-        }
-    );
+    let result = proof.compute_root::<Blake2bHasher, PaddedKey<50>, H256, 50>(vec![([42u8; 50].into(), [42u8; 32].into())]);
+    assert_eq!(result.unwrap_err(), Error::IncorrectNumberOfLeaves { expected: 0, actual: 1 });
     // makes room for leaves
     let proof = MerkleProof::new(vec![Vec::new()], Default::default());
     let root = proof
-        .compute_root::<Blake2bHasher, PaddedKey<50>, H256, 50>(vec![(
-            [42u8; 50].into(),
-            [42u8; 32].into(),
-        )])
+        .compute_root::<Blake2bHasher, PaddedKey<50>, H256, 50>(vec![([42u8; 50].into(), [42u8; 32].into())])
         .expect("compute root");
     assert_ne!(root, H256::zero());
 }
@@ -111,19 +83,13 @@ fn test_validate() {
 #[test]
 fn test_merkle_root() {
     let mut tree = Smt::<42>::default();
-    for (i, word) in "The quick brown fox jumps over the lazy dog"
-        .split_whitespace()
-        .enumerate()
-    {
+    for (i, word) in "The quick brown fox jumps over the lazy dog".split_whitespace().enumerate() {
         let key: PaddedKey<42> = {
             let mut buf = [0u8; 42];
 
-            let mut hasher = blake2::Blake2bVar::new(buf.len())
-                .expect("must be able to create new blake2b hasher instance");
+            let mut hasher = blake2::Blake2bVar::new(buf.len()).expect("must be able to create new blake2b hasher instance");
             hasher.update(&(i as u32).to_le_bytes());
-            hasher
-                .finalize_variable(&mut buf)
-                .expect("must be able to finalize blake2b hasher instance");
+            hasher.finalize_variable(&mut buf).expect("must be able to finalize blake2b hasher instance");
 
             buf.into()
         };
@@ -137,8 +103,7 @@ fn test_merkle_root() {
     }
 
     let expected_root: H256 = [
-        97, 117, 223, 198, 55, 131, 159, 62, 156, 63, 163, 61, 233, 10, 116, 54, 92, 202, 128, 103,
-        33, 126, 76, 91, 46, 229, 239, 96, 194, 180, 1, 71,
+        97, 117, 223, 198, 55, 131, 159, 62, 156, 63, 163, 61, 233, 10, 116, 54, 92, 202, 128, 103, 33, 126, 76, 91, 46, 229, 239, 96, 194, 180, 1, 71,
     ]
     .into();
     assert_eq!(tree.store().leaves_map().len(), 9);
@@ -150,8 +115,7 @@ fn test_merkle_root() {
 fn test_zero_value_donot_change_root() {
     let mut tree = Smt::<33>::default();
     let key = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 1,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
     ]
     .into();
     let value = H256::zero();
@@ -164,30 +128,16 @@ fn test_zero_value_donot_change_root() {
 #[test]
 fn test_zero_value_donot_change_store() {
     let mut tree = Smt::<30>::default();
-    let key = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    ]
-    .into();
-    let value = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 1,
-    ]
-    .into();
+    let key = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].into();
+    let value = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1].into();
     tree.update(key, value).unwrap();
     assert_ne!(tree.root(), &H256::zero());
     let root = *tree.root();
     let store = tree.store().clone();
 
     // insert a zero value leaf
-    let key = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    ]
-    .into();
-    let value = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
-    ]
-    .into();
+    let key = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1].into();
+    let value = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].into();
     tree.update(key, value).unwrap();
     assert_eq!(tree.root(), &root);
     assert_eq!(tree.store().leaves_map(), store.leaves_map());
@@ -197,32 +147,16 @@ fn test_zero_value_donot_change_store() {
 #[test]
 fn test_delete_a_leaf() {
     let mut tree = Smt::<32>::default();
-    let key = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
-    ]
-    .into();
-    let value = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 1,
-    ]
-    .into();
+    let key = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].into();
+    let value = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1].into();
     tree.update(key, value).unwrap();
     assert_ne!(tree.root(), &H256::zero());
     let root = *tree.root();
     let store = tree.store().clone();
 
     // insert a leaf
-    let key = [
-        1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
-    ]
-    .into();
-    let value = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 1,
-    ]
-    .into();
+    let key = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].into();
+    let value = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1].into();
     tree.update(key, value).unwrap();
     assert_ne!(tree.root(), &root);
 
@@ -278,10 +212,7 @@ fn test_merkle_proof(key: PaddedKey<32>, value: H256) {
     tree.update(key, value).expect("update");
     if !tree.is_empty() {
         let proof = tree.merkle_proof(vec![key]).expect("proof");
-        let compiled_proof = proof
-            .clone()
-            .compile(vec![(key, value)])
-            .expect("compile proof");
+        let compiled_proof = proof.clone().compile(vec![(key, value)]).expect("compile proof");
         assert!(proof.proof().len() < EXPECTED_PROOF_SIZE);
         assert!(
             proof
@@ -304,15 +235,8 @@ fn new_smt<const N: usize>(pairs: Vec<(PaddedKey<N>, H256)>) -> Smt<N> {
     smt
 }
 
-fn leaves(
-    min_leaves: usize,
-    max_leaves: usize,
-) -> impl Strategy<Value = (Vec<(PaddedKey<29>, H256)>, usize)> {
-    prop::collection::vec(
-        prop::array::uniform2(prop::array::uniform32(1u8..0xF8)),
-        min_leaves..=max_leaves,
-    )
-    .prop_flat_map(|mut pairs| {
+fn leaves(min_leaves: usize, max_leaves: usize) -> impl Strategy<Value = (Vec<(PaddedKey<29>, H256)>, usize)> {
+    prop::collection::vec(prop::array::uniform2(prop::array::uniform32(1u8..0xF8)), min_leaves..=max_leaves).prop_flat_map(|mut pairs| {
         pairs.dedup_by_key(|[k, _v]| *k);
         let len = pairs.len();
         (
@@ -586,30 +510,14 @@ fn test_v0_2_broken_sample() {
 
 #[test]
 fn test_v0_3_broken_sample() {
-    let k1 = [
-        0u8, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
-    ];
+    let k1 = [0u8, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let v1 = [
-        108u8, 153, 9, 238, 15, 28, 173, 182, 146, 77, 52, 203, 162, 151, 125, 76, 55, 176, 192,
-        104, 170, 5, 193, 174, 137, 255, 169, 176, 132, 64, 199, 115,
+        108u8, 153, 9, 238, 15, 28, 173, 182, 146, 77, 52, 203, 162, 151, 125, 76, 55, 176, 192, 104, 170, 5, 193, 174, 137, 255, 169, 176, 132, 64, 199, 115,
     ];
-    let k2 = [
-        1u8, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
-    ];
-    let v2 = [
-        0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
-    ];
-    let k3 = [
-        1u8, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
-    ];
-    let v3 = [
-        0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
-    ];
+    let k2 = [1u8, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let v2 = [0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let k3 = [1u8, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let v3 = [0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
     let mut smt = Smt::<32>::default();
     // inserted keys shouldn't interfere with each other

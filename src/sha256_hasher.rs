@@ -23,10 +23,7 @@ impl Hasher for Sha256Hasher {
 
     fn finish(self) -> H256 {
         let hash = self.0.finalize();
-        let bytes: [u8; SHA256_DIGEST_BYTE_LEN] = hash
-            .as_slice()
-            .try_into()
-            .expect("Sha256 output conversion to fixed array shouldn't fail");
+        let bytes: [u8; SHA256_DIGEST_BYTE_LEN] = hash.as_slice().try_into().expect("Sha256 output conversion to fixed array shouldn't fail");
 
         bytes.into()
     }

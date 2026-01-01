@@ -16,9 +16,7 @@ pub trait Hasher {
 /// This trait is map keys to / from the users key space into a finite
 /// key space used internally. This space is the set of all N-byte arrays
 /// where N < 2^32
-pub trait Key<const N: usize>:
-    Eq + PartialEq + Copy + Clone + Hash + Deref<Target = InternalKey<N>>
-{
+pub trait Key<const N: usize>: Eq + PartialEq + Copy + Clone + Hash + Deref<Target = InternalKey<N>> {
     /// The error type for failed mappings
     type Error;
     /// This should map from the internal key space
@@ -43,9 +41,7 @@ impl Key<32> for KeyHash {
 
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, Self::Error> {
         use core::convert::TryInto;
-        let bytes: [u8; 32] = bytes
-            .try_into()
-            .map_err(|_| crate::error::Error::KeyTooLarge)?;
+        let bytes: [u8; 32] = bytes.try_into().map_err(|_| crate::error::Error::KeyTooLarge)?;
         Ok(bytes.into())
     }
 }

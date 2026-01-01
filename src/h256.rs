@@ -61,10 +61,7 @@ impl H256 {
     /// Treat H256 as a path in a tree
     /// return parent_path of self
     pub fn parent_path(&self, height: u8) -> Self {
-        height
-            .checked_add(1)
-            .map(|i| self.copy_bits(i..))
-            .unwrap_or_else(H256::zero)
+        height.checked_add(1).map(|i| self.copy_bits(i..)).unwrap_or_else(H256::zero)
     }
 
     /// Copy bits and return a new H256
@@ -108,9 +105,7 @@ impl H256 {
         }
 
         // copy remain bits
-        for i in (start..core::cmp::min((ARRAY_SIZE - end_byte) * BYTE, end))
-            .chain(core::cmp::max((ARRAY_SIZE - start_byte) * BYTE, start)..end)
-        {
+        for i in (start..core::cmp::min((ARRAY_SIZE - end_byte) * BYTE, end)).chain(core::cmp::max((ARRAY_SIZE - start_byte) * BYTE, start)..end) {
             if self.get_bit(i as u8) {
                 target.set_bit(i as u8)
             }

@@ -4,14 +4,14 @@
 //!
 //! ```
 //! use nam_sparse_merkle_tree::{
-//!     blake2b_hasher::Blake2bHasher, default_store::DefaultStore,
+//!     blake3_hasher::Blake3Hasher, default_store::DefaultStore,
 //!     error::Error, MerkleProof,
 //!     SparseMerkleTree, traits::Value, H256, Hash,
 //!     traits::Hasher,
 //! };
 //!
 //! // define SMT
-//! type SMT = SparseMerkleTree<Blake2bHasher, Hash, Word, DefaultStore<Hash, Word, 32>, 32>;
+//! type SMT = SparseMerkleTree<Blake3Hasher, Hash, Word, DefaultStore<Hash, Word, 32>, 32>;
 //!
 //! // define SMT value
 //! #[derive(Default, Clone, PartialEq)]
@@ -32,13 +32,13 @@
 //!         .enumerate()
 //!     {
 //!         let key: Hash = {
-//!             let mut hasher = Blake2bHasher::default();
+//!             let mut hasher = Blake3Hasher::default();
 //!             hasher.write_bytes(&(i as u32).to_le_bytes());
 //!             hasher.finish().into()
 //!         };
 //!
 //!         let hash: H256 = if !word.is_empty() {
-//!             let mut hasher = Blake2bHasher::default();
+//!             let mut hasher = Blake3Hasher::default();
 //!             hasher.write_bytes(word.as_bytes());
 //!             hasher.finish().into()
 //!         } else {
@@ -55,19 +55,23 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature = "blake2b")]
-pub mod blake2b_hasher;
+#[cfg(feature = "blake3")]
+pub mod blake3_hasher;
+
+#[cfg(feature = "turboshake")]
+pub mod turboshake_hasher;
+
 pub mod default_store;
 pub mod error;
 pub mod h256;
 pub mod internal_key;
 pub mod merge;
 pub mod merkle_proof;
-#[cfg(test)]
-mod tests;
 pub mod traits;
 pub mod tree;
-pub mod turboshake_hasher;
+
+#[cfg(test)]
+mod tests;
 
 pub use h256::{H256, Hash};
 pub use internal_key::InternalKey;
@@ -80,7 +84,7 @@ pub const EXPECTED_PATH_SIZE: usize = (256usize.ilog2() * 2) as usize;
 /// Height of sparse merkle tree
 pub const TREE_HEIGHT: usize = 256;
 /// Key limit size
-pub const KEY_LIMIT: usize = 4_294_967_295u32 as usize;
+pub const KEY_LIMIT: usize = u32::MAX as usize;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "std")] {

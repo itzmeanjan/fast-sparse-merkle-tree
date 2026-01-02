@@ -1,7 +1,9 @@
 default: fmt clippy test check
 
+BACKTRACE=RUST_BACKTRACE=1
+
 test:
-	cargo test --profile test-release --all --all-features
+	$(BACKTRACE) cargo test --profile test-release --all --all-features
 
 clippy:
 	cargo clippy  --all --all-features --all-targets

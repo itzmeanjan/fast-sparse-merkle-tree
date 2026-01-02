@@ -14,6 +14,9 @@ check:
 test:
 	$(BACKTRACE) cargo test --profile test-release --all --all-features
 
+coverage:
+	cargo tarpaulin -t 600 --profile test-release --out Html
+
 clean:
 	cargo clean
 

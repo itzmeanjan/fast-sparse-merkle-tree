@@ -1,4 +1,4 @@
-default: fmt clippy test check
+default: fmt clippy check test example
 
 BACKTRACE=RUST_BACKTRACE=1
 
@@ -16,6 +16,9 @@ test:
 
 coverage:
 	cargo tarpaulin -t 600 --profile test-release --out Html
+
+example:
+	cargo run --example smt_example --no-default-features --features "std, turboshake"
 
 clean:
 	cargo clean

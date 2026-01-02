@@ -63,7 +63,6 @@ pub mod h256;
 pub mod internal_key;
 pub mod merge;
 pub mod merkle_proof;
-pub mod sha256_hasher;
 #[cfg(test)]
 mod tests;
 pub mod traits;

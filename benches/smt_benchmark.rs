@@ -3,7 +3,7 @@ extern crate criterion;
 
 use criterion::{Criterion, Throughput};
 use nam_sparse_merkle_tree::{
-    H256, Hash, default_store::DefaultStore, sha256_hasher::Sha256Hasher, tree::SparseMerkleTree, turboshake_hasher::TurboShake128Hasher,
+    H256, Hash, blake2b_hasher::Blake2bHasher, default_store::DefaultStore, tree::SparseMerkleTree, turboshake_hasher::TurboShake128Hasher,
 };
 use rand::Rng;
 use std::time::Duration;
@@ -11,15 +11,15 @@ use std::time::Duration;
 const TARGET_LEAVES_COUNT: usize = 32;
 const NUM_LEAVES_IN_SMT: [usize; 3] = [1usize << 8, 1usize << 12, 1usize << 16];
 
-type Sha256SMT = SparseMerkleTree<Sha256Hasher, Hash, H256, DefaultStore<Hash, H256, 32>, 32>;
+type Blake2bSMT = SparseMerkleTree<Blake2bHasher, Hash, H256, DefaultStore<Hash, H256, 32>, 32>;
 type TurboShake128SMT = SparseMerkleTree<TurboShake128Hasher, Hash, H256, DefaultStore<Hash, H256, 32>, 32>;
 
 fn random_h256<R: Rng + ?Sized>(rng: &mut R) -> H256 {
     rng.random::<[u8; std::mem::size_of::<H256>()]>().into()
 }
 
-fn random_sha256_smt<R: Rng + ?Sized>(update_count: usize, rng: &mut R) -> (Sha256SMT, Vec<Hash>) {
-    let mut smt = Sha256SMT::default();
+fn random_blake2b_smt<R: Rng + ?Sized>(update_count: usize, rng: &mut R) -> (Blake2bSMT, Vec<Hash>) {
+    let mut smt = Blake2bSMT::default();
     let mut keys = Vec::with_capacity(update_count);
 
     for _ in 0..update_count {
@@ -52,9 +52,9 @@ fn bench_smt_update(c: &mut Criterion) {
     let mut group = c.benchmark_group("smt_update");
 
     for size in NUM_LEAVES_IN_SMT.iter() {
-        group.bench_with_input(format!("sha256/{}", size), size, |b, &size| {
+        group.bench_with_input(format!("blake2b/{}", size), size, |b, &size| {
             let mut rng = rand::rng();
-            b.iter(|| random_sha256_smt(size, &mut rng));
+            b.iter(|| random_blake2b_smt(size, &mut rng));
         });
 
         group.bench_with_input(format!("turboshake128/{}", size), size, |b, &size| {
@@ -70,9 +70,9 @@ fn bench_smt_get(c: &mut Criterion) {
     let mut group = c.benchmark_group("smt_get");
 
     for size in NUM_LEAVES_IN_SMT.iter() {
-        group.bench_with_input(format!("sha256/{}", size), size, |b, &size| {
+        group.bench_with_input(format!("blake2b/{}", size), size, |b, &size| {
             let mut rng = rand::rng();
-            let (smt, _) = random_sha256_smt(size, &mut rng);
+            let (smt, _) = random_blake2b_smt(size, &mut rng);
 
             b.iter(|| {
                 let key = random_h256(&mut rng).into();
@@ -98,10 +98,10 @@ fn bench_smt_gen_merkle_proof(c: &mut Criterion) {
     let mut group = c.benchmark_group("smt_gen_merkle_proof");
 
     for size in NUM_LEAVES_IN_SMT.iter() {
-        group.bench_with_input(format!("sha256/{}", size), size, |b, &size| {
+        group.bench_with_input(format!("blake2b/{}", size), size, |b, &size| {
             let mut rng = rand::rng();
 
-            let (smt, mut keys) = random_sha256_smt(size, &mut rng);
+            let (smt, mut keys) = random_blake2b_smt(size, &mut rng);
             keys.dedup();
 
             let keys: Vec<_> = keys.into_iter().take(TARGET_LEAVES_COUNT).collect();
@@ -126,9 +126,9 @@ fn bench_smt_verify_merkle_proof(c: &mut Criterion) {
     let mut group = c.benchmark_group("smt_verify_merkle_proof");
 
     for size in NUM_LEAVES_IN_SMT.iter() {
-        group.bench_with_input(format!("sha256/{}", size), size, |b, &size| {
+        group.bench_with_input(format!("blake2b/{}", size), size, |b, &size| {
             let mut rng = rand::rng();
-            let (smt, mut keys) = random_sha256_smt(size, &mut rng);
+            let (smt, mut keys) = random_blake2b_smt(size, &mut rng);
             keys.dedup();
 
             let leaves: Vec<_> = keys.iter().take(TARGET_LEAVES_COUNT).map(|k| (*k, smt.get(k).unwrap())).collect();
@@ -139,7 +139,7 @@ fn bench_smt_verify_merkle_proof(c: &mut Criterion) {
                 assert!(
                     proof
                         .clone()
-                        .verify::<Sha256Hasher, Hash, H256, 32>(root, leaves.clone())
+                        .verify::<Blake2bHasher, Hash, H256, 32>(root, leaves.clone())
                         .expect("must pass verification")
                 );
             });
@@ -173,9 +173,9 @@ fn bench_smt_validate(c: &mut Criterion) {
 
     for size in NUM_LEAVES_IN_SMT.iter() {
         group.throughput(Throughput::Elements(*size as u64));
-        group.bench_with_input(format!("sha256/{}", size), size, |b, &size| {
+        group.bench_with_input(format!("blake2b/{}", size), size, |b, &size| {
             let mut rng = rand::rng();
-            let (smt, _) = random_sha256_smt(size, &mut rng);
+            let (smt, _) = random_blake2b_smt(size, &mut rng);
 
             b.iter(|| assert!(smt.validate()));
         });

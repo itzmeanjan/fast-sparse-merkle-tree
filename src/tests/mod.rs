@@ -2,11 +2,11 @@ mod padded_key;
 
 use super::*;
 use crate::{MerkleProof, SparseMerkleTree, blake2b_hasher::Blake2bHasher, default_store::DefaultStore, error::Error, traits::Hasher};
+use blake2::digest::{Update, VariableOutput};
 use core::convert::{TryFrom, TryInto};
 use padded_key::PaddedKey;
 use proptest::prelude::*;
 use rand::prelude::{Rng, SliceRandom};
-use sha2::digest::{Update, VariableOutput};
 
 type Smt<const N: usize> = SparseMerkleTree<Blake2bHasher, PaddedKey<N>, H256, DefaultStore<PaddedKey<N>, H256, N>, N>;
 

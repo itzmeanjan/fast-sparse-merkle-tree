@@ -81,7 +81,8 @@ rustc 1.91.1 (ed61e7d7e 2025-11-07)
 For ensuring functional correctness of Sparse Merkle Tree operations, this library crate includes a comprehensive testing suite. Run all the tests by issuing following command from the root of the project repository.
 
 ```bash
-make test
+make test # Just the tests
+make      # Tests along with clippy, formatter, cargo check and examples
 ```
 
 ### Code Coverage
@@ -131,9 +132,11 @@ To include `fast-sparse-merkle-tree` library crate in your Rust project, add it 
 
 ```toml
 [dependencies]
-fast-sparse-merkle-tree = "=0.1.1"
+fast-sparse-merkle-tree = "=0.1.2"
 # or (minimal, just `turboshake` for faster hashing, no_std)
-fast-sparse-merkle-tree = { version = "=0.1.1", default-features = false, features = ["turboshake"] }
+fast-sparse-merkle-tree = { version = "=0.1.2", default-features = false, features = ["turboshake"] }
+# or `turboshake` for hashing and `serde` for (de)serializing types
+fast-sparse-merkle-tree = { version = "=0.1.2", default-features = false, features = ["turboshake", "serde"] }
 ```
 
 See [smt_example.rs](./examples/sparse_merkle_tree.rs) example program which demonstrates main functionality of SMT. Run it with `$ make example`.

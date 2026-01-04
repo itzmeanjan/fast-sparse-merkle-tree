@@ -3,11 +3,14 @@
 
 use crate::H256;
 use crate::{InternalKey, Key};
-#[cfg(feature = "borsh")]
-use borsh::{BorshDeserialize, BorshSerialize};
 use core::convert::TryFrom;
 use core::fmt::Debug;
 use core::ops::{Deref, DerefMut};
+
+#[cfg(feature = "borsh")]
+use borsh::{BorshDeserialize, BorshSerialize};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// Represents bytes that have been right padded with zeros to be
 /// an `N`-length byte array.
@@ -15,6 +18,7 @@ use core::ops::{Deref, DerefMut};
 /// This is handy default type for this library
 #[derive(Eq, PartialEq, Debug, Hash, Clone, Copy)]
 #[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct PaddedKey<const N: usize> {
     pub padded: InternalKey<N>,
     pub length: usize,

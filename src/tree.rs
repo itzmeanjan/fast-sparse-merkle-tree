@@ -7,14 +7,18 @@ use crate::{
     traits::{Hasher, Store, Value},
     vec::Vec,
 };
-#[cfg(feature = "borsh")]
-use borsh::{BorshDeserialize, BorshSerialize};
 use core::{cmp::max, marker::PhantomData};
 use itertools::Itertools;
+
+#[cfg(feature = "borsh")]
+use borsh::{BorshDeserialize, BorshSerialize};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// A branch in the SMT
 #[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct BranchNode<K, const N: usize>
 where
     K: Key<N>,
@@ -38,6 +42,7 @@ where
 /// A leaf in the SMT
 #[derive(Debug, Eq, PartialEq, Clone)]
 #[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct LeafNode<K, V, const N: usize>
 where
     K: Key<N>,
